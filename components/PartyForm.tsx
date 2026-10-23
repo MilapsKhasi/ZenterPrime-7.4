@@ -162,22 +162,9 @@ const PartyForm: React.FC<PartyFormProps> = ({ initialData, prefilledName, defau
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 w-full max-w-4xl flex flex-col max-h-[90vh] overflow-hidden rounded-md border border-slate-300 dark:border-slate-800">
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 liquid-glass-header shrink-0 sticky top-0 z-10">
-        <h2 
-          style={{ fontFamily: 'Ubuntu', fontWeight: 'normal', lineHeight: '30px' }}
-          className="text-[18px] font-normal text-slate-900 dark:text-white"
-        >
-          Party Master
-        </h2>
-        <button type="button" onClick={onCancel} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-none">
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-
+    <div className="bg-white dark:bg-slate-900 w-full flex flex-col">
       {isDraftRestored && (
-        <div className="mx-6 mt-4 p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg flex items-center justify-between text-xs text-amber-900 dark:text-amber-200 shadow-2xs">
+        <div className="mx-6 mt-4 p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex items-center justify-between text-xs text-amber-900 dark:text-amber-200">
           <span className="flex items-center gap-2 font-medium">
             <FileText className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
             <span>Restored unsaved draft from your previous session.</span>
@@ -185,181 +172,185 @@ const PartyForm: React.FC<PartyFormProps> = ({ initialData, prefilledName, defau
           <button
             type="button"
             onClick={handleDiscardDraft}
-            className="px-2.5 py-1 bg-amber-200/70 dark:bg-amber-900/60 hover:bg-amber-300 dark:hover:bg-amber-800 text-amber-950 dark:text-amber-100 font-semibold rounded transition-colors cursor-pointer"
+            className="px-2.5 py-1 bg-amber-200/70 dark:bg-amber-900/60 hover:bg-amber-300 dark:hover:bg-amber-800 text-amber-950 dark:text-amber-100 font-semibold transition-colors cursor-pointer"
           >
             Discard Draft
           </button>
         </div>
       )}
 
-      {/* Scrollable Form Body */}
-      <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto flex flex-col bg-white dark:bg-slate-900">
-        <div className="p-4 sm:p-8 space-y-6">
-          <div className="border border-slate-200 dark:border-slate-800 rounded-md p-4 sm:p-8 space-y-6 bg-white dark:bg-slate-900">
-              
-              {/* Party Name & Default Group / Category */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                  <div className="sm:col-span-2 space-y-1.5">
-                      <label className="text-[14px] font-normal text-slate-900 dark:text-slate-300">Party Name</label>
-                      <input 
-                        ref={firstInputRef} 
-                        type="text" 
-                        required
-                        value={toDisplayValue(formData.name)} 
-                        onChange={e => handleChange('name', e.target.value)} 
-                        className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded outline-none text-[14px] focus:border-slate-400 dark:focus:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white uppercase font-bold" 
-                        placeholder="Party / Business Name" 
-                      />
-                  </div>
-                  <div className="space-y-1.5">
-                      <label className="text-[14px] font-normal text-slate-900 dark:text-slate-300">Party Type</label>
-                      <select 
-                        value={formData.party_type || 'customer'}
-                        onChange={e => handleTypeChange(e.target.value as 'customer' | 'vendor' | 'both')}
-                        className="w-full h-10 px-3 border border-slate-200 dark:border-slate-700 rounded outline-none text-[14px] focus:border-slate-400 dark:focus:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium"
-                      >
-                        <option value="customer" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Customer</option>
-                        <option value="vendor" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Vendor</option>
-                        <option value="both" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Both (Customer & Vendor)</option>
-                      </select>
-                  </div>
-              </div>
-
-              {/* Opening Balance & Location Info */}
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
-                  <div className="space-y-1.5 sm:col-span-1">
-                      <label className="text-[14px] font-normal text-slate-900 dark:text-slate-300">Opening Balance</label>
-                      <input 
-                        type="number" 
-                        value={toDisplayValue(formData.balance)} 
-                        onChange={e => handleChange('balance', parseFloat(e.target.value) || 0)} 
-                        className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded outline-none text-[14px] focus:border-slate-400 dark:focus:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono" 
-                        placeholder="0.00" 
-                      />
-                  </div>
-                  <div className="space-y-1.5 sm:col-span-1">
-                      <label className="text-[14px] font-normal text-slate-900 dark:text-slate-300">GSTIN Number</label>
-                      <input 
-                        type="text" 
-                        value={toDisplayValue(formData.gstin)} 
-                        onChange={e => handleChange('gstin', e.target.value.toUpperCase())} 
-                        className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded outline-none text-[14px] focus:border-slate-400 dark:focus:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white uppercase font-mono" 
-                        placeholder="GSTIN (Optional)" 
-                      />
-                  </div>
-                  <div className="space-y-1.5 sm:col-span-1">
-                      <label className="text-[14px] font-normal text-slate-900 dark:text-slate-300">PAN Number</label>
-                      <input 
-                        type="text" 
-                        value={toDisplayValue(formData.pan)} 
-                        onChange={e => handleChange('pan', e.target.value.toUpperCase())} 
-                        className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded outline-none text-[14px] focus:border-slate-400 dark:focus:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white uppercase font-mono" 
-                        placeholder="PAN Number" 
-                      />
-                  </div>
-                  <div className="space-y-1.5 sm:col-span-1">
-                      <label className="text-[14px] font-normal text-slate-900 dark:text-slate-300">State</label>
-                      <input 
-                        type="text" 
-                        value={toDisplayValue(formData.state)} 
-                        onChange={e => handleChange('state', e.target.value)} 
-                        className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded outline-none text-[14px] focus:border-slate-400 dark:focus:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white" 
-                        placeholder="State Name" 
-                      />
-                  </div>
-              </div>
-
-              {/* Contact Info */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div className="space-y-1.5">
-                      <label className="text-[14px] font-normal text-slate-900 dark:text-slate-300">Email Address</label>
-                      <input 
-                        type="email" 
-                        value={toDisplayValue(formData.email)} 
-                        onChange={e => handleChange('email', e.target.value)} 
-                        className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded outline-none text-[14px] focus:border-slate-400 dark:focus:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white" 
-                        placeholder="Email Address" 
-                      />
-                  </div>
-                  <div className="space-y-1.5">
-                      <label className="text-[14px] font-normal text-slate-900 dark:text-slate-300">Contact Number</label>
-                      <input 
-                        type="text" 
-                        value={toDisplayValue(formData.phone)} 
-                        onChange={e => handleChange('phone', e.target.value)} 
-                        className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded outline-none text-[14px] focus:border-slate-400 dark:focus:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white" 
-                        placeholder="Phone Number" 
-                      />
-                  </div>
-              </div>
-
-              {/* Business Address */}
-              <div className="space-y-1.5">
-                  <label className="text-[14px] font-normal text-slate-900 dark:text-slate-300">Business Address</label>
-                  <textarea 
-                    rows={4} 
-                    value={toDisplayValue(formData.address)} 
-                    onChange={e => handleChange('address', e.target.value)} 
-                    className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded outline-none text-[14px] focus:border-slate-400 dark:focus:border-slate-600 resize-none bg-white dark:bg-slate-800 text-slate-900 dark:text-white" 
-                    placeholder="Physical / Billing Address" 
-                  />
-              </div>
-
-              {/* Bank Details */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                  <div className="space-y-1.5">
-                      <label className="text-[14px] font-normal text-slate-900 dark:text-slate-300">Bank Account Number</label>
-                      <input 
-                        type="text" 
-                        value={toDisplayValue(formData.account_number)} 
-                        onChange={e => handleChange('account_number', e.target.value)} 
-                        className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded outline-none text-[14px] focus:border-slate-400 dark:focus:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono" 
-                        placeholder="Account Number" 
-                      />
-                  </div>
-                  <div className="space-y-1.5">
-                      <label className="text-[14px] font-normal text-slate-900 dark:text-slate-300">Account Holder Name</label>
-                      <input 
-                        type="text" 
-                        value={toDisplayValue(formData.account_name)} 
-                        onChange={e => handleChange('account_name', e.target.value)} 
-                        className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded outline-none text-[14px] focus:border-slate-400 dark:focus:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white" 
-                        placeholder="Holder's Name" 
-                      />
-                  </div>
-                  <div className="space-y-1.5">
-                      <label className="text-[14px] font-normal text-slate-900 dark:text-slate-300">IFSC Code</label>
-                      <input 
-                        type="text" 
-                        value={toDisplayValue(formData.ifsc_code)} 
-                        onChange={e => handleChange('ifsc_code', e.target.value.toUpperCase())} 
-                        className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded outline-none text-[14px] focus:border-slate-400 dark:focus:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono uppercase" 
-                        placeholder="IFSC Code" 
-                      />
-                  </div>
-              </div>
+      {/* Form Body */}
+      <form onSubmit={handleSubmit} className="p-6 space-y-6 bg-white dark:bg-slate-900">
+        {/* Party Name & Type */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="sm:col-span-2 space-y-1.5">
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Party Name</label>
+            <input 
+              ref={firstInputRef} 
+              type="text" 
+              required
+              value={toDisplayValue(formData.name)} 
+              onChange={e => handleChange('name', e.target.value)} 
+              className="w-full h-10 px-3 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none text-xs uppercase font-medium focus:border-primary" 
+              placeholder="Party / Business Name" 
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Party Type</label>
+            <select 
+              value={formData.party_type || 'customer'}
+              onChange={e => handleTypeChange(e.target.value as 'customer' | 'vendor' | 'both')}
+              className="w-full h-10 px-3 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none text-xs font-medium focus:border-primary"
+            >
+              <option value="customer" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Customer</option>
+              <option value="vendor" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Vendor</option>
+              <option value="both" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Both (Customer & Vendor)</option>
+            </select>
           </div>
         </div>
 
-        {/* Fixed Footer */}
-        <div className="px-8 py-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end space-x-4 bg-white dark:bg-slate-900 shrink-0">
-            <button type="button" onClick={onCancel} disabled={loading} className="text-[13px] text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-none font-normal disabled:opacity-50 disabled:cursor-not-allowed">Discard</button>
-            <button 
-              type="button" 
-              onClick={() => { setIsSaveAndNew(true); handleSubmit(new Event('submit') as any); }} 
-              disabled={loading}
-              className="px-6 py-2 border border-slate-200 dark:border-slate-700 rounded-md text-[13px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-none flex items-center capitalize disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading && isSaveAndNew ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null} Save & New
-            </button>
-            <button 
-              type="submit" 
-              onClick={() => setIsSaveAndNew(false)}
-              disabled={loading} 
-              className="bg-primary hover:bg-primary-dark text-white px-6 py-2 rounded-md font-medium text-xs transition-none flex items-center justify-center min-w-[100px] capitalize disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading && !isSaveAndNew ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Party'}
-            </button>
+        {/* Balance & Legal Registrations */}
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div className="space-y-1.5 sm:col-span-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Opening Balance</label>
+            <input 
+              type="number" 
+              value={toDisplayValue(formData.balance)} 
+              onChange={e => handleChange('balance', parseFloat(e.target.value) || 0)} 
+              className="w-full h-10 px-3 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none text-xs focus:border-primary" 
+              placeholder="0.00" 
+            />
+          </div>
+          <div className="space-y-1.5 sm:col-span-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">GSTIN Number</label>
+            <input 
+              type="text" 
+              value={toDisplayValue(formData.gstin)} 
+              onChange={e => handleChange('gstin', e.target.value.toUpperCase())} 
+              className="w-full h-10 px-3 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none text-xs uppercase focus:border-primary" 
+              placeholder="15-digit GSTIN" 
+            />
+          </div>
+          <div className="space-y-1.5 sm:col-span-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">PAN Number</label>
+            <input 
+              type="text" 
+              value={toDisplayValue(formData.pan)} 
+              onChange={e => handleChange('pan', e.target.value.toUpperCase())} 
+              className="w-full h-10 px-3 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none text-xs uppercase focus:border-primary" 
+              placeholder="10-digit PAN" 
+            />
+          </div>
+          <div className="space-y-1.5 sm:col-span-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">State Name</label>
+            <input 
+              type="text" 
+              value={toDisplayValue(formData.state)} 
+              onChange={e => handleChange('state', e.target.value)} 
+              className="w-full h-10 px-3 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none text-xs focus:border-primary" 
+              placeholder="e.g. Maharashtra" 
+            />
+          </div>
+        </div>
+
+        {/* Contact Info */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Email Address</label>
+            <input 
+              type="email" 
+              value={toDisplayValue(formData.email)} 
+              onChange={e => handleChange('email', e.target.value)} 
+              className="w-full h-10 px-3 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none text-xs focus:border-primary" 
+              placeholder="name@company.com" 
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Contact Number</label>
+            <input 
+              type="text" 
+              value={toDisplayValue(formData.phone)} 
+              onChange={e => handleChange('phone', e.target.value)} 
+              className="w-full h-10 px-3 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none text-xs focus:border-primary" 
+              placeholder="e.g. 9876543210" 
+            />
+          </div>
+        </div>
+
+        {/* Business Address */}
+        <div className="space-y-1.5">
+          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Business Address</label>
+          <textarea 
+            rows={3} 
+            value={toDisplayValue(formData.address)} 
+            onChange={e => handleChange('address', e.target.value)} 
+            className="w-full p-3 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none text-xs resize-none h-24 focus:border-primary" 
+            placeholder="Physical / Billing Address" 
+          />
+        </div>
+
+        {/* Bank Account Details */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Bank Account Number</label>
+            <input 
+              type="text" 
+              value={toDisplayValue(formData.account_number)} 
+              onChange={e => handleChange('account_number', e.target.value)} 
+              className="w-full h-10 px-3 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none text-xs focus:border-primary" 
+              placeholder="Account Number" 
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Account Holder Name</label>
+            <input 
+              type="text" 
+              value={toDisplayValue(formData.account_name)} 
+              onChange={e => handleChange('account_name', e.target.value)} 
+              className="w-full h-10 px-3 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none text-xs focus:border-primary" 
+              placeholder="Account Name" 
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">IFSC Code</label>
+            <input 
+              type="text" 
+              value={toDisplayValue(formData.ifsc_code)} 
+              onChange={e => handleChange('ifsc_code', e.target.value.toUpperCase())} 
+              className="w-full h-10 px-3 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none text-xs uppercase focus:border-primary" 
+              placeholder="IFSC Code" 
+            />
+          </div>
+        </div>
+
+        {/* Action Buttons Horizontal Bar: Discard, Save, Save & New */}
+        <div className="flex flex-wrap items-center justify-end gap-3 pt-6 border-t border-slate-200 dark:border-slate-800">
+          <button 
+            type="button" 
+            onClick={onCancel} 
+            disabled={loading} 
+            className="h-10 px-4 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
+            Discard
+          </button>
+          <button 
+            type="submit" 
+            onClick={() => setIsSaveAndNew(false)}
+            disabled={loading} 
+            className="h-10 px-5 bg-primary text-white hover:bg-primary-dark text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
+            {loading && !isSaveAndNew ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            <span>{initialData ? 'Update Party' : 'Save Party'}</span>
+          </button>
+          <button 
+            type="button" 
+            onClick={() => { setIsSaveAndNew(true); handleSubmit(new Event('submit') as any); }} 
+            disabled={loading}
+            className="h-10 px-5 bg-slate-800 dark:bg-slate-700 text-white hover:bg-slate-900 dark:hover:bg-slate-600 text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
+            {loading && isSaveAndNew ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            <span>Save & New</span>
+          </button>
         </div>
       </form>
     </div>

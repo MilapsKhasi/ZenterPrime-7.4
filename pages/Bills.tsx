@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, Loader2, Edit, Trash2, Plus, ReceiptText, Lock } from 'lucide-react';
+import { Search, Loader2, Edit, Trash2, Plus, ReceiptText, Lock, ArrowUpCircle } from 'lucide-react';
 import { formatDate, formatCurrency, getActiveCompanyId, normalizeBill, unsyncTransactionFromCashbook } from '../utils/helpers';
 import Modal from '../components/Modal';
 import BillForm from '../components/BillForm';
@@ -14,6 +14,8 @@ import SectionIcon from '../components/SectionIcon';
 import { supabase } from '../lib/supabase';
 import { useLicense } from '../context/LicenseContext';
 import { useSecurityDemo } from '../context/SecurityDemoContext';
+import { PaymentVoucherModal } from '../components/PaymentVoucherModal';
+import { ActionMenu } from '../components/ActionMenu';
 
 const Bills = () => {
   const location = useLocation();
@@ -26,6 +28,12 @@ const Bills = () => {
   const [editingBill, setEditingBill] = useState<any | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const [settlePayment, setSettlePayment] = useState<{
+    isOpen: boolean;
+    partyName: string;
+    billId: string;
+    amount: number;
+  } | null>(null);
   const [dateRange, setDateRange] = useState<{ startDate: string | null, endDate: string | null }>({ startDate: null, endDate: null });
 
   useEffect(() => {
@@ -335,20 +343,41 @@ const Bills = () => {
                       <td className="py-4 px-6 text-right font-mono text-slate-600 dark:text-slate-400 text-sm">{formatCurrency(b.total_gst)}</td>
                       <td className="py-4 px-6 text-right font-mono font-bold text-slate-900 dark:text-white text-base tabular-nums">{formatCurrency(b.grand_total)}</td>
                       <td className="py-4 px-6 text-center" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-center space-x-1">
-                          {!isReadOnly ? (
-                            <>
-                              <button onClick={() => { setEditingBill(b); setIsModalOpen(true); }} className="p-1.5 text-slate-400 hover:text-primary rounded-md transition-colors" title="Edit Bill">
-                                <Edit className="w-4 h-4" />
-                              </button>
-                              <button onClick={() => verifyAction('Delete Bill', () => setDeleteDialog({ isOpen: true, bill: b }))} className="p-1.5 text-slate-400 hover:text-red-500 rounded-md transition-colors cursor-pointer" title="Delete Bill">
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </>
-                          ) : (
-                            <span className="text-[10px] text-slate-400 italic">Read Only</span>
-                          )}
-                        </div>
+                        <ActionMenu
+                          items={[
+                            {
+                              label: 'Settle Payment',
+                              icon: ArrowUpCircle,
+                              variant: 'success',
+                              onClick: () => {
+                                setSettlePayment({
+                                  isOpen: true,
+                                  partyName: b.vendor_name || b.customer_name || '',
+                                  billId: b.id,
+                                  amount: Number(b.grand_total || 0)
+                                });
+                              }
+                            },
+                            {
+                              label: 'Edit Bill',
+                              icon: Edit,
+                              disabled: isReadOnly,
+                              onClick: () => {
+                                setEditingBill(b);
+                                setIsModalOpen(true);
+                              }
+                            },
+                            {
+                              label: 'Delete Bill',
+                              icon: Trash2,
+                              variant: 'danger',
+                              disabled: isReadOnly,
+                              onClick: () => {
+                                verifyAction('Delete Bill', () => setDeleteDialog({ isOpen: true, bill: b }));
+                              }
+                            }
+                          ]}
+                        />
                       </td>
                     </tr>
                   );
@@ -358,6 +387,21 @@ const Bills = () => {
           </div>
         )}
       </div>
+
+      {settlePayment?.isOpen && (
+        <PaymentVoucherModal
+          isOpen={settlePayment.isOpen}
+          onClose={() => setSettlePayment(null)}
+          initialType="Payment"
+          initialPartyName={settlePayment.partyName}
+          initialBillId={settlePayment.billId}
+          initialAmount={settlePayment.amount}
+          onSuccess={() => {
+            setSettlePayment(null);
+            loadData();
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -195,7 +195,7 @@ const Modal: React.FC<ModalProps> = ({
     >
       {/* Backdrop - Outside clicks strictly disabled */}
       <div 
-        className="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm" 
+        className="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80" 
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -203,9 +203,9 @@ const Modal: React.FC<ModalProps> = ({
       />
       <div 
         ref={modalRef}
-        className={`relative bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 w-full ${maxWidth} flex flex-col overflow-hidden rounded-lg shadow-2xl max-h-[90vh] z-10`}
+        className={`relative bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 w-full ${maxWidth} flex flex-col overflow-hidden max-h-[90vh] z-10`}
       >
-        <div className="flex items-center justify-between px-6 py-4 liquid-glass-header shrink-0 border-b border-slate-100 dark:border-slate-800 z-10">
+        <div className="flex items-center justify-between px-6 py-4 bg-white dark:bg-slate-900 shrink-0 border-b border-slate-200 dark:border-slate-800 z-10">
           <h3 
             style={{ fontFamily: 'Ubuntu', fontWeight: 'normal', lineHeight: '30px' }}
             className="text-[18px] font-normal text-slate-900 dark:text-slate-100 capitalize"
@@ -229,11 +229,11 @@ const Modal: React.FC<ModalProps> = ({
       {/* Draft Loss Confirmation Warning Dialog */}
       {showCloseWarning && (
         <div 
-          className="fixed inset-0 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md"
+          className="fixed inset-0 flex items-center justify-center p-4 bg-slate-950/70"
           style={{ zIndex: warningZIndex }}
         >
-          <div className="bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/50 rounded-xl shadow-2xl p-6 max-w-md w-full flex flex-col items-center text-center">
-            <div className="p-3 bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 rounded-full mb-4">
+          <div className="bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-800 p-6 max-w-md w-full flex flex-col items-center text-center">
+            <div className="p-3 bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 mb-4">
               <AlertTriangle className="w-8 h-8" />
             </div>
             
@@ -249,10 +249,10 @@ const Modal: React.FC<ModalProps> = ({
               <button
                 type="button"
                 onClick={() => setShowCloseWarning(false)}
-                className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold uppercase text-[11px] tracking-wider rounded-lg transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold uppercase text-[11px] tracking-wider transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <span>No</span>
-                <span className="text-[9px] bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded text-slate-500 dark:text-slate-400 font-mono">(N)</span>
+                <span className="text-[9px] bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 text-slate-500 dark:text-slate-400">(N)</span>
               </button>
 
               <button
@@ -261,10 +261,10 @@ const Modal: React.FC<ModalProps> = ({
                   setShowCloseWarning(false);
                   onCloseRef.current();
                 }}
-                className="flex-1 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold uppercase text-[11px] tracking-wider rounded-lg shadow-md transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                className="flex-1 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold uppercase text-[11px] tracking-wider transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <span>Yes</span>
-                <span className="text-[9px] bg-rose-700 px-1.5 py-0.5 rounded text-rose-100 font-mono">(Y)</span>
+                <span className="text-[9px] bg-rose-700 px-1.5 py-0.5 text-rose-100">(Y)</span>
               </button>
             </div>
           </div>

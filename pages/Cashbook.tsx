@@ -10,6 +10,7 @@ import { exportToCSV } from '../utils/exportHelper';
 import { useCompany } from '../context/CompanyContext';
 import { useLicense } from '../context/LicenseContext';
 import { useSecurityDemo } from '../context/SecurityDemoContext';
+import { ActionMenu } from '../components/ActionMenu';
 
 const Cashbook = () => {
   const { activeCompany, loading: companyLoading } = useCompany();
@@ -308,16 +309,29 @@ const Cashbook = () => {
                         <td className="text-right py-4 px-6 font-bold text-slate-900 dark:text-white font-mono text-base tabular-nums">
                             {formatCurrency(e.balance, false)}
                         </td>
-                        <td className="text-center py-4 px-6">
-                            <div className="flex items-center justify-center space-x-2">
-                            <button onClick={() => { setEditingEntry(e); setViewState('entry'); }} className="p-1.5 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-md transition-colors" title="View Statement"><Eye className="w-4 h-4" /></button>
-                            {!isReadOnly && (
-                              <>
-                                <button onClick={() => { setEditingEntry(e); setViewState('entry'); }} className="p-1.5 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-md transition-colors" title="Edit Statement"><Edit className="w-4 h-4" /></button>
-                                <button onClick={() => deleteEntry(e.id)} className="p-1.5 text-slate-400 hover:text-red-500 rounded-md transition-colors" title="Delete Statement"><Trash2 className="w-4 h-4" /></button>
-                              </>
-                            )}
-                            </div>
+                        <td className="text-center py-4 px-6" onClick={(e) => e.stopPropagation()}>
+                          <ActionMenu
+                            items={[
+                              {
+                                label: 'View Statement',
+                                icon: Eye,
+                                onClick: () => { setEditingEntry(e); setViewState('entry'); }
+                              },
+                              {
+                                label: 'Edit Statement',
+                                icon: Edit,
+                                disabled: isReadOnly,
+                                onClick: () => { setEditingEntry(e); setViewState('entry'); }
+                              },
+                              {
+                                label: 'Delete Statement',
+                                icon: Trash2,
+                                variant: 'danger',
+                                disabled: isReadOnly,
+                                onClick: () => deleteEntry(e.id)
+                              }
+                            ]}
+                          />
                         </td>
                         </tr>
                     ))}

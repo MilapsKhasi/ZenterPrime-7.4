@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Edit, Trash2, Filter, ChevronDown, Loader2, ReceiptText, Plus, CheckCircle2, Clock } from 'lucide-react';
+import { Search, Edit, Trash2, Filter, ChevronDown, Loader2, ReceiptText, Plus, CheckCircle2, Clock, ArrowUpCircle } from 'lucide-react';
 import { formatCurrency, formatDate, getActiveCompanyId, normalizeBill } from '../utils/helpers';
 import Modal from '../components/Modal';
 import BillForm from '../components/BillForm';
@@ -8,6 +8,8 @@ import PageHeader from '../components/PageHeader';
 import SectionIcon from '../components/SectionIcon';
 import { supabase } from '../lib/supabase';
 import { useSecurityDemo } from '../context/SecurityDemoContext';
+import { PaymentVoucherModal } from '../components/PaymentVoucherModal';
+import { ActionMenu } from '../components/ActionMenu';
 
 const Purchases = () => {
   const { verifyAction } = useSecurityDemo();
@@ -18,6 +20,12 @@ const Purchases = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBill, setEditingBill] = useState<any | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [settlePayment, setSettlePayment] = useState<{
+    isOpen: boolean;
+    partyName: string;
+    billId: string;
+    amount: number;
+  } | null>(null);
   
   const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; bill: any | null }>({
     isOpen: false,
@@ -207,11 +215,40 @@ const Purchases = () => {
                         </span>
                       )}
                     </td>
-                    <td className="py-4 px-6 text-center">
-                      <div className="flex items-center justify-center space-x-1">
-                        <button onClick={() => { setEditingBill(b); setIsModalOpen(true); }} className="p-1.5 text-slate-400 hover:text-primary rounded-md transition-colors" title="Edit Bill"><Edit className="w-4 h-4" /></button>
-                        <button onClick={() => setDeleteDialog({ isOpen: true, bill: b })} className="p-1.5 text-slate-400 hover:text-red-500 rounded-md transition-colors" title="Delete Bill"><Trash2 className="w-4 h-4" /></button>
-                      </div>
+                    <td className="py-4 px-6 text-center" onClick={(e) => e.stopPropagation()}>
+                      <ActionMenu
+                        items={[
+                          {
+                            label: 'Settle Payment',
+                            icon: ArrowUpCircle,
+                            variant: 'success',
+                            onClick: () => {
+                              setSettlePayment({
+                                isOpen: true,
+                                partyName: b.vendor_name || b.customer_name || '',
+                                billId: b.id,
+                                amount: Number(b.outstanding ?? b.grand_total ?? 0)
+                              });
+                            }
+                          },
+                          {
+                            label: 'Edit Bill',
+                            icon: Edit,
+                            onClick: () => {
+                              setEditingBill(b);
+                              setIsModalOpen(true);
+                            }
+                          },
+                          {
+                            label: 'Delete Bill',
+                            icon: Trash2,
+                            variant: 'danger',
+                            onClick: () => {
+                              setDeleteDialog({ isOpen: true, bill: b });
+                            }
+                          }
+                        ]}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -223,6 +260,21 @@ const Purchases = () => {
           </div>
         )}
       </div>
+
+      {settlePayment?.isOpen && (
+        <PaymentVoucherModal
+          isOpen={settlePayment.isOpen}
+          onClose={() => setSettlePayment(null)}
+          initialType="Payment"
+          initialPartyName={settlePayment.partyName}
+          initialBillId={settlePayment.billId}
+          initialAmount={settlePayment.amount}
+          onSuccess={() => {
+            setSettlePayment(null);
+            loadData();
+          }}
+        />
+      )}
     </div>
   );
 };

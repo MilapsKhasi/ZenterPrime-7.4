@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, Printer, Truck, Calendar, User, FileText, AlertTriangle, Package, ShoppingCart } from 'lucide-react';
+import { Plus, Trash2, Save, Printer, Truck, Calendar, User, FileText, AlertTriangle, Package, ShoppingCart, Loader2 } from 'lucide-react';
 import { supabase, getAuthUser } from '../lib/supabase';
 import { getActiveCompanyId, safeSupabaseSave, ensureParty, ensureStockItems, normalizeBill, fetchStockItemsWithBalance } from '../utils/helpers';
 import Modal from './Modal';
 import StockForm from './StockForm';
 import BillForm from './BillForm';
 import ItemSelectDropdown from './ItemSelectDropdown';
+import { InvoicePrintModal } from './InvoicePrintModal';
 import { recordActivity } from '../utils/activityTracker';
 import { getDraft, saveDraft, clearDraft } from '../utils/draftManager';
 
@@ -54,6 +55,9 @@ export const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
   const [loadingParties, setLoadingParties] = useState(false);
   const [loadingChallanNo, setLoadingChallanNo] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isSaveAndNewSaving, setIsSaveAndNewSaving] = useState(false);
+  const [isSaveAndPrintSaving, setIsSaveAndPrintSaving] = useState(false);
+  const [showPrintModal, setShowPrintModal] = useState(false);
 
   const [itemModal, setItemModal] = useState<{
     isOpen: boolean;
@@ -672,9 +676,9 @@ export const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
   };
 
   return (
-    <div className="space-y-6 p-5">
+    <div className="p-6 space-y-6 bg-white dark:bg-slate-900">
       {isDraftRestored && (
-        <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg flex items-center justify-between text-xs text-amber-900 dark:text-amber-200 shadow-2xs">
+        <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex items-center justify-between text-xs text-amber-900 dark:text-amber-200">
           <span className="flex items-center gap-2 font-medium">
             <FileText className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
             <span>Restored unsaved draft from your previous session.</span>
@@ -682,87 +686,77 @@ export const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
           <button
             type="button"
             onClick={handleDiscardDraft}
-            className="px-2.5 py-1 bg-amber-200/70 dark:bg-amber-900/60 hover:bg-amber-300 dark:hover:bg-amber-800 text-amber-950 dark:text-amber-100 font-semibold rounded transition-colors cursor-pointer"
+            className="px-2.5 py-1 bg-amber-200/70 dark:bg-amber-900/60 hover:bg-amber-300 dark:hover:bg-amber-800 text-amber-950 dark:text-amber-100 font-semibold transition-colors cursor-pointer"
           >
             Discard Draft
           </button>
         </div>
       )}
 
-      {/* Basic Info Fields */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-md border border-slate-200/80 dark:border-slate-800">
-        <div>
-          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-            Customer / Party Name *
+      {/* Voucher Header Info: Date, Voucher Number, Party Name */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="space-y-1.5">
+          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+            Date
           </label>
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              list="dc-parties-list"
-              value={partyName}
-              onChange={(e) => setPartyName(e.target.value)}
-              placeholder="Select or enter party name"
-              className="w-full h-10 pl-9 pr-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-slate-300 dark:focus:border-slate-600"
-            />
-            <datalist id="dc-parties-list">
-              {parties.map(p => (
-                <option key={p.id} value={p.name} />
-              ))}
-            </datalist>
-          </div>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="w-full h-10 px-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-medium text-slate-900 dark:text-white outline-none focus:border-primary"
+          />
         </div>
 
-        <div>
-          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-            Challan Number *
+        <div className="space-y-1.5">
+          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+            Voucher Number
           </label>
-          <div className="relative">
-            <FileText className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${challanNoDuplicateError ? 'text-red-500 dark:text-red-400' : 'text-slate-400'}`} />
-            <input
-              type="text"
-              value={challanNumber}
-              onChange={(e) => handleChallanNumberChange(e.target.value)}
-              placeholder={loadingChallanNo ? 'Generating...' : 'e.g. DC-001'}
-              className={`w-full h-10 pl-9 pr-3 bg-white dark:bg-slate-800 rounded-md text-xs font-mono font-medium text-slate-900 dark:text-white focus:outline-none transition-all ${
-                challanNoDuplicateError
-                  ? 'border-2 border-red-500 dark:border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 bg-red-50/40 dark:bg-red-950/20 text-red-900 dark:text-red-200 font-bold'
-                  : 'border border-slate-200 dark:border-slate-700 focus:border-slate-300 dark:focus:border-slate-600'
-              }`}
-            />
-          </div>
+          <input
+            type="text"
+            value={challanNumber}
+            onChange={(e) => handleChallanNumberChange(e.target.value)}
+            placeholder={loadingChallanNo ? 'Generating...' : 'e.g. DC-001'}
+            className={`w-full h-10 px-3 bg-white dark:bg-slate-800 text-xs font-medium text-slate-900 dark:text-white outline-none uppercase transition-colors ${
+              challanNoDuplicateError
+                ? 'border-2 border-red-500 bg-red-50/40 text-red-900'
+                : 'border border-slate-300 dark:border-slate-700 focus:border-primary'
+            }`}
+          />
           {challanNoDuplicateError && (
-            <p className="mt-1 text-[11px] font-semibold text-red-600 dark:text-red-400 flex items-center space-x-1">
-              <span>{challanNoDuplicateError}</span>
+            <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
+              {challanNoDuplicateError}
             </p>
           )}
         </div>
 
-        <div>
-          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-            Challan Date *
+        <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
+          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+            Party Name
           </label>
-          <div className="relative">
-            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full h-10 pl-9 pr-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-slate-300 dark:focus:border-slate-600"
-            />
-          </div>
+          <input
+            type="text"
+            list="dc-parties-list"
+            value={partyName}
+            onChange={(e) => setPartyName(e.target.value)}
+            placeholder="Select or enter party name"
+            className="w-full h-10 px-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-medium text-slate-900 dark:text-white outline-none focus:border-primary uppercase"
+          />
+          <datalist id="dc-parties-list">
+            {parties.map(p => (
+              <option key={p.id} value={p.name} />
+            ))}
+          </datalist>
         </div>
       </div>
 
-      {/* Transport & Vehicle Details */}
-      <div className="bg-white dark:bg-slate-900 p-4 rounded-md border border-slate-200/80 dark:border-slate-800 space-y-3">
-        <h3 className="text-xs font-semibold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center space-x-2">
-          <Truck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-          <span>Dispatch & Transport Details</span>
+      {/* Dispatch & Transport Details */}
+      <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
+        <h3 className="text-xs font-semibold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-3">
+          Dispatch & Transport Details
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div>
-            <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
               Vehicle Number
             </label>
             <input
@@ -770,38 +764,38 @@ export const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
               value={vehicleNo}
               onChange={(e) => setVehicleNo(e.target.value)}
               placeholder="e.g. MH-12-AB-1234"
-              className="w-full h-10 px-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-xs text-slate-900 dark:text-white focus:outline-none focus:border-slate-300 dark:focus:border-slate-600"
+              className="w-full h-10 px-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white outline-none focus:border-primary uppercase"
             />
           </div>
 
-          <div>
-            <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
-              Driver Name / Phone
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+              Driver Name
             </label>
             <input
               type="text"
               value={driverName}
               onChange={(e) => setDriverName(e.target.value)}
               placeholder="e.g. Ramesh / 9876543210"
-              className="w-full h-10 px-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-xs text-slate-900 dark:text-white focus:outline-none focus:border-slate-300 dark:focus:border-slate-600"
+              className="w-full h-10 px-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white outline-none focus:border-primary"
             />
           </div>
 
-          <div>
-            <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
-              E-Way Bill No.
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+              E-Way Bill Number
             </label>
             <input
               type="text"
               value={ewayBillNo}
               onChange={(e) => setEwayBillNo(e.target.value)}
               placeholder="e.g. 123456789012"
-              className="w-full h-10 px-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-xs text-slate-900 dark:text-white focus:outline-none focus:border-slate-300 dark:focus:border-slate-600"
+              className="w-full h-10 px-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white outline-none focus:border-primary"
             />
           </div>
 
-          <div>
-            <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
               Destination Location
             </label>
             <input
@@ -809,170 +803,220 @@ export const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
               value={dispatchDestination}
               onChange={(e) => setDispatchDestination(e.target.value)}
               placeholder="e.g. Warehouse 3, Pune"
-              className="w-full h-10 px-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-xs text-slate-900 dark:text-white focus:outline-none focus:border-slate-300 dark:focus:border-slate-600"
+              className="w-full h-10 px-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white outline-none focus:border-primary"
             />
           </div>
         </div>
       </div>
 
-      {/* Dispatched Stock Items Table */}
-      <div className="border border-slate-200 dark:border-slate-800 rounded-md overflow-hidden bg-white dark:bg-slate-900">
-        <div className="p-3 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between shadow-[0_2px_10px_-3px_rgba(0,0,0,0.03)]">
-          <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-            Dispatched Items & Quantities
-          </span>
-          <button
-            type="button"
-            onClick={addLineItem}
-            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-medium flex items-center space-x-1 transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Add Item</span>
-          </button>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
-            <thead>
-              <tr className="bg-slate-100/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 font-semibold">
-                <th className="p-2.5 w-10 text-center">#</th>
-                <th className="p-2.5 min-w-[220px]">Item Name</th>
-                <th className="p-2.5 w-24">HSN</th>
-                <th className="p-2.5 w-24 text-right">Qty</th>
-                <th className="p-2.5 w-20">Unit</th>
-                <th className="p-2.5 w-28 text-right">Rate (₹)</th>
-                <th className="p-2.5 w-28 text-right">Amount (₹)</th>
-                <th className="p-2.5 w-12 text-center"></th>
+      {/* Dispatched Items Section */}
+      <div className="border border-slate-200 dark:border-slate-800 overflow-x-auto bg-white dark:bg-slate-900">
+        <table className="w-full text-xs border-collapse">
+          <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold">
+            <tr>
+              <th className="p-3 w-10 text-center border-r border-slate-200 dark:border-slate-700">#</th>
+              <th className="p-3 text-left border-r border-slate-200 dark:border-slate-700 min-w-[220px]">Particulars</th>
+              <th className="p-3 text-left w-24 border-r border-slate-200 dark:border-slate-700">HSN Code</th>
+              <th className="p-3 text-center w-24 border-r border-slate-200 dark:border-slate-700">Quantity</th>
+              <th className="p-3 text-center w-20 border-r border-slate-200 dark:border-slate-700">Unit</th>
+              <th className="p-3 text-right w-28 border-r border-slate-200 dark:border-slate-700">Rate</th>
+              <th className="p-3 text-right w-28">Subtotal</th>
+              <th className="w-10"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            {lineItems.map((item, idx) => (
+              <tr key={item.id || idx}>
+                <td className="p-2.5 text-center text-slate-400 border-r border-slate-100 dark:border-slate-800">{idx + 1}</td>
+                <td className="p-0 border-r border-slate-100 dark:border-slate-800 min-w-[220px]">
+                  <ItemSelectDropdown
+                    value={item.item_name}
+                    stockItems={stockItemsList}
+                    onSelect={(selectedItem) => selectStockItemForDCRow(idx, selectedItem)}
+                    onAddNewItem={() => setItemModal({ isOpen: true, rowIdx: idx, initialData: null })}
+                    onEditItem={(itemToEdit) => setItemModal({ isOpen: true, rowIdx: idx, initialData: itemToEdit })}
+                    placeholder="Select Item"
+                  />
+                </td>
+                <td className="p-0 border-r border-slate-100 dark:border-slate-800">
+                  <input
+                    type="text"
+                    value={item.hsn}
+                    onChange={(e) => handleLineChange(idx, 'hsn', e.target.value)}
+                    placeholder="HSN"
+                    className="w-full h-10 px-3 outline-none bg-transparent text-slate-500 dark:text-slate-400"
+                  />
+                </td>
+                <td className="p-0 border-r border-slate-100 dark:border-slate-800">
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={item.quantity}
+                    onChange={(e) => handleLineChange(idx, 'quantity', e.target.value)}
+                    className="w-full h-10 px-2 text-center outline-none font-semibold dark:text-white bg-transparent"
+                  />
+                </td>
+                <td className="p-0 border-r border-slate-100 dark:border-slate-800">
+                  <input
+                    type="text"
+                    value={item.unit}
+                    onChange={(e) => handleLineChange(idx, 'unit', e.target.value)}
+                    placeholder="PCS"
+                    className="w-full h-10 px-2 text-center outline-none uppercase font-semibold dark:text-white bg-transparent"
+                  />
+                </td>
+                <td className="p-0 border-r border-slate-100 dark:border-slate-800">
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={item.rate}
+                    onChange={(e) => handleLineChange(idx, 'rate', e.target.value)}
+                    className="w-full h-10 px-2 text-right outline-none font-semibold dark:text-white bg-transparent"
+                  />
+                </td>
+                <td className="p-3 text-right font-semibold text-slate-900 dark:text-slate-100">
+                  {(Number(item.amount) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </td>
+                <td className="p-2.5 text-center">
+                  <button
+                    type="button"
+                    onClick={() => removeLineItem(idx)}
+                    disabled={lineItems.length === 1}
+                    className="text-slate-400 hover:text-red-500 disabled:opacity-30 cursor-pointer"
+                    title="Remove Item"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {lineItems.map((item, idx) => (
-                <tr key={item.id || idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
-                  <td className="p-2.5 text-center text-slate-400">{idx + 1}</td>
-                  <td className="p-0 border-r border-slate-100 dark:border-slate-800 min-w-[220px]">
-                    <ItemSelectDropdown
-                      value={item.item_name}
-                      stockItems={stockItemsList}
-                      onSelect={(selectedItem) => selectStockItemForDCRow(idx, selectedItem)}
-                      onAddNewItem={() => setItemModal({ isOpen: true, rowIdx: idx, initialData: null })}
-                      onEditItem={(itemToEdit) => setItemModal({ isOpen: true, rowIdx: idx, initialData: itemToEdit })}
-                      placeholder="Select Item"
-                    />
-                  </td>
-                  <td className="p-2.5">
-                    <input
-                      type="text"
-                      value={item.hsn}
-                      onChange={(e) => handleLineChange(idx, 'hsn', e.target.value)}
-                      placeholder="HSN"
-                      className="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 font-mono"
-                    />
-                  </td>
-                  <td className="p-2.5">
-                    <input
-                      type="number"
-                      min="0"
-                      step="any"
-                      value={item.quantity}
-                      onChange={(e) => handleLineChange(idx, 'quantity', e.target.value)}
-                      className="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-xs text-slate-900 dark:text-white text-right focus:outline-none focus:border-emerald-500 font-mono"
-                    />
-                  </td>
-                  <td className="p-2.5">
-                    <input
-                      type="text"
-                      value={item.unit}
-                      onChange={(e) => handleLineChange(idx, 'unit', e.target.value)}
-                      placeholder="PCS"
-                      className="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-xs text-slate-900 dark:text-white uppercase focus:outline-none focus:border-emerald-500"
-                    />
-                  </td>
-                  <td className="p-2.5">
-                    <input
-                      type="number"
-                      min="0"
-                      step="any"
-                      value={item.rate}
-                      onChange={(e) => handleLineChange(idx, 'rate', e.target.value)}
-                      className="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-xs text-slate-900 dark:text-white text-right focus:outline-none focus:border-emerald-500 font-mono"
-                    />
-                  </td>
-                  <td className="p-2.5 text-right font-mono font-medium text-slate-900 dark:text-white">
-                    {(Number(item.amount) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </td>
-                  <td className="p-2.5 text-center">
-                    <button
-                      type="button"
-                      onClick={() => removeLineItem(idx)}
-                      disabled={lineItems.length === 1}
-                      className="p-1 text-slate-400 hover:text-rose-500 disabled:opacity-30 cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
+        <button
+          type="button"
+          onClick={addLineItem}
+          className="w-full py-2.5 bg-slate-50 dark:bg-slate-800/50 text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider hover:bg-slate-100 dark:hover:bg-slate-800 border-t border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+        >
+          + Add New Row
+        </button>
       </div>
 
-      {/* Summary & Notes */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-        <div>
-          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-            Dispatch Notes / Terms
+      {/* Bottom Section: Remark on Left, Amount Fields on Right */}
+      <div className="flex flex-col lg:flex-row justify-between items-start pt-4 border-t border-slate-200 dark:border-slate-800 gap-8">
+        <div className="w-full lg:w-1/2">
+          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+            Remark
           </label>
           <textarea
-            rows={3}
+            rows={4}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="e.g. Goods delivered in good condition. Subject to verification at destination."
-            className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-xs text-slate-900 dark:text-white focus:outline-none focus:border-slate-300 dark:focus:border-slate-600"
+            placeholder="Enter dispatch notes, goods condition, or delivery terms..."
+            className="w-full p-3 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none text-xs resize-none h-40 focus:border-primary"
           />
         </div>
 
-        <div className="bg-slate-50 dark:bg-slate-900/60 p-4 rounded-md border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
-          <div className="flex justify-between font-bold text-sm text-slate-900 dark:text-white">
-            <span>Total Goods Value</span>
-            <span className="font-mono text-emerald-600 dark:text-emerald-400">
+        <div className="flex flex-col items-end space-y-3 w-full lg:w-1/2">
+          <div className="flex items-center justify-between w-full max-w-sm text-xs border-t border-slate-200 dark:border-slate-800 pt-3">
+            <span className="text-slate-900 dark:text-slate-100 font-bold text-sm">Total Goods Value</span>
+            <span className="font-bold text-xl text-primary">
               ₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+      {/* Action Buttons Horizontal Bar */}
+      <div className="flex flex-wrap items-center justify-end gap-3 pt-6 border-t border-slate-200 dark:border-slate-800">
         <button
           type="button"
           onClick={onCancel}
           disabled={saving}
-          className="h-10 px-4 border border-slate-200 dark:border-slate-700 rounded-md text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+          className="h-10 px-4 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
-          Cancel
+          Discard
         </button>
 
         <button
           type="button"
-          onClick={() => handleSave(true, false)}
+          onClick={() => setShowPrintModal(true)}
           disabled={saving}
-          className="h-10 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-medium flex items-center space-x-2 transition-colors shadow-xs cursor-pointer"
+          className="h-10 px-5 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
-          <Printer className="w-4 h-4" />
-          <span>Save & Print</span>
+          <Printer className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+          <span>Print Preview</span>
         </button>
 
         <button
           type="button"
           onClick={() => handleSave(false, false)}
           disabled={saving}
-          className="h-10 px-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-semibold flex items-center space-x-2 transition-colors shadow-xs cursor-pointer"
+          className="h-10 px-5 bg-primary text-white hover:bg-primary-dark text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
-          <Save className="w-4 h-4" />
-          <span>{saving ? 'Saving...' : 'Save Delivery Challan'}</span>
+          {saving && !isSaveAndNewSaving && !isSaveAndPrintSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+          <span>{initialData ? 'Update Challan' : 'Save'}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setIsSaveAndNewSaving(true);
+            handleSave(false, true).finally(() => setIsSaveAndNewSaving(false));
+          }}
+          disabled={saving}
+          className="h-10 px-5 bg-slate-800 dark:bg-slate-700 text-white hover:bg-slate-900 dark:hover:bg-slate-600 text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+        >
+          {saving && isSaveAndNewSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+          <span>Save & New</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setIsSaveAndPrintSaving(true);
+            handleSave(true, false).finally(() => setIsSaveAndPrintSaving(false));
+          }}
+          disabled={saving}
+          className="h-10 px-5 bg-primary text-white hover:bg-primary-dark text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+        >
+          {saving && isSaveAndPrintSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+          <Printer className="w-4 h-4" />
+          <span>{initialData ? 'Update & Print' : 'Save & Print'}</span>
         </button>
       </div>
+
+      <InvoicePrintModal
+        isOpen={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        invoice={{
+          date,
+          challan_number: challanNumber || 'DRAFT',
+          invoice_number: challanNumber || 'DRAFT',
+          bill_number: challanNumber || 'DRAFT',
+          customer_name: partyName,
+          total_goods_value: grandTotal,
+          grand_total: grandTotal,
+          items: lineItems.map(i => ({
+            itemName: i.item_name,
+            hsnCode: i.hsn,
+            qty: i.quantity,
+            unit: i.unit,
+            rate: i.rate,
+            itemTotal: i.amount
+          })),
+          items_raw: {
+            is_delivery_challan: true,
+            vehicle_no: vehicleNo,
+            driver_name: driverName,
+            eway_bill_no: ewayBillNo,
+            dispatch_destination: dispatchDestination,
+            line_items: lineItems
+          },
+          description: notes
+        }}
+      />
 
       {/* Stock Item Modal */}
       {itemModal.isOpen && (

@@ -16,6 +16,7 @@ interface DeviceVerificationContextType {
   requiresEnrollment: boolean;
   currentUserId: string | null;
   rateLimit: RateLimitInfo | null;
+  lastVerified: number | null;
   verifyPin: (pin: string) => Promise<{ success: boolean; error?: string }>;
   enrollPin: (pin: string, confirmPin: string) => Promise<{ success: boolean; error?: string }>;
   refreshDeviceStatus: () => Promise<void>;
@@ -30,12 +31,22 @@ export const DeviceVerificationProvider: React.FC<{ children: ReactNode }> = ({ 
   const [isPinEnrolled, setIsPinEnrolled] = useState<boolean>(true);
   const [rateLimit, setRateLimit] = useState<RateLimitInfo | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [lastVerified, setLastVerified] = useState<number | null>(() => {
+    if (typeof window !== 'undefined') {
+      const val = localStorage.getItem('device_last_verified');
+      return val ? Number(val) : null;
+    }
+    return null;
+  });
 
   const checkStatus = useCallback(async () => {
     // If running in offline local mode, bypass cloud device check
     if (typeof window !== 'undefined' && localStorage.getItem('use_offline_mode') === 'true') {
       setIsDeviceVerified(true);
       setDeviceVerifiedSession(true);
+      const now = Date.now();
+      setLastVerified(now);
+      localStorage.setItem('device_last_verified', String(now));
       setIsCheckingDevice(false);
       return;
     }
@@ -66,6 +77,9 @@ export const DeviceVerificationProvider: React.FC<{ children: ReactNode }> = ({ 
       if (result.deviceVerified) {
         setIsDeviceVerified(true);
         setDeviceVerifiedSession(true);
+        const now = Date.now();
+        setLastVerified(now);
+        localStorage.setItem('device_last_verified', String(now));
         // Trigger safe workspace sync only now that device is verified
         syncUserWorkspaceDataToIndexedDB(user.id).catch(() => {});
       } else {
@@ -81,15 +95,24 @@ export const DeviceVerificationProvider: React.FC<{ children: ReactNode }> = ({ 
     }
   }, []);
 
+  const isDeviceVerifiedRef = React.useRef(isDeviceVerified);
+  isDeviceVerifiedRef.current = isDeviceVerified;
+
   useEffect(() => {
     checkStatus();
 
     const { data: authListener } = supabase.auth.onAuthStateChange((event: any, session: any) => {
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+      if (event === 'SIGNED_IN') {
         checkStatus();
+      } else if (event === 'TOKEN_REFRESHED') {
+        if (!isDeviceVerifiedRef.current) {
+          checkStatus();
+        }
       } else if (event === 'SIGNED_OUT') {
         setIsDeviceVerified(false);
         setDeviceVerifiedSession(false);
+        setLastVerified(null);
+        localStorage.removeItem('device_last_verified');
         setIsCheckingDevice(false);
         setCurrentUserId(null);
         setRateLimit(null);
@@ -107,6 +130,9 @@ export const DeviceVerificationProvider: React.FC<{ children: ReactNode }> = ({ 
     if (res.verified) {
       setIsDeviceVerified(true);
       setDeviceVerifiedSession(true);
+      const now = Date.now();
+      setLastVerified(now);
+      localStorage.setItem('device_last_verified', String(now));
       if (currentUserId) {
         syncUserWorkspaceDataToIndexedDB(currentUserId).catch(() => {});
       }
@@ -139,6 +165,9 @@ export const DeviceVerificationProvider: React.FC<{ children: ReactNode }> = ({ 
       setIsPinEnrolled(true);
       setIsDeviceVerified(true);
       setDeviceVerifiedSession(true);
+      const now = Date.now();
+      setLastVerified(now);
+      localStorage.setItem('device_last_verified', String(now));
       if (currentUserId) {
         syncUserWorkspaceDataToIndexedDB(currentUserId).catch(() => {});
       }
@@ -151,6 +180,8 @@ export const DeviceVerificationProvider: React.FC<{ children: ReactNode }> = ({ 
   const resetDeviceSession = () => {
     setIsDeviceVerified(false);
     setDeviceVerifiedSession(false);
+    setLastVerified(null);
+    localStorage.removeItem('device_last_verified');
     clearStoredBrowserVerificationKey().catch(() => {});
   };
 
@@ -167,6 +198,7 @@ export const DeviceVerificationProvider: React.FC<{ children: ReactNode }> = ({ 
         requiresEnrollment,
         currentUserId,
         rateLimit,
+        lastVerified,
         verifyPin,
         enrollPin,
         refreshDeviceStatus: checkStatus,

@@ -14,7 +14,8 @@ export const DeviceVerificationGate: React.FC<{ children: React.ReactNode }> = (
     rateLimit,
     verifyPin,
     enrollPin,
-    refreshDeviceStatus
+    refreshDeviceStatus,
+    lastVerified
   } = useDeviceVerification();
 
   const [pinDigits, setPinDigits] = useState<string[]>(['', '', '', '']);
@@ -188,15 +189,15 @@ export const DeviceVerificationGate: React.FC<{ children: React.ReactNode }> = (
   // 2. Initial State: Checking device credentials
   if (isCheckingDevice) {
     return (
-      <div className="min-h-screen bg-[#F0F2F6] flex items-center justify-center p-4 font-sans">
-        <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-xl max-w-sm w-full text-center">
-          <div className="w-12 h-12 rounded-xl bg-blue-50 text-[#1865E8] flex items-center justify-center mx-auto mb-4 animate-pulse">
-            <Loader2 className="w-6 h-6 animate-spin text-[#1865E8]" />
+      <div className="min-h-screen bg-[#F0F2F6] dark:bg-slate-950 flex items-center justify-center p-4 font-sans transition-colors">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800 shadow-xl max-w-sm w-full text-center transition-colors">
+          <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-[#1865E8] dark:text-blue-400 flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <Loader2 className="w-6 h-6 animate-spin text-[#1865E8] dark:text-blue-400" />
           </div>
-          <h2 className="text-base font-bold text-slate-800">
+          <h2 className="text-base font-bold text-slate-800 dark:text-white">
             Verifying Device Security
           </h2>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Validating browser credentials...
           </p>
         </div>
@@ -204,15 +205,18 @@ export const DeviceVerificationGate: React.FC<{ children: React.ReactNode }> = (
     );
   }
 
-  // 2. Verified: Grant Access to children
-  if (isDeviceVerified) {
+  const ONE_HOUR = 60 * 60 * 1000;
+  const isRecentlyVerified = lastVerified !== null && (Date.now() - lastVerified < ONE_HOUR);
+
+  // 2. Verified or within 1-hour window: Grant Access to children
+  if (isDeviceVerified || isRecentlyVerified) {
     return <>{children}</>;
   }
 
   // 3. Enrollment Mode (Setting up 4-Digit Z-PIN)
   if (requiresEnrollment) {
     return (
-      <div className="min-h-screen bg-[#F0F2F6] flex items-center justify-center p-4 sm:p-8 font-sans">
+      <div className="min-h-screen bg-[#F0F2F6] dark:bg-slate-950 flex items-center justify-center p-4 sm:p-8 font-sans transition-colors">
         <div className="w-full max-w-[1040px] rounded-[32px] p-5 sm:p-7 shadow-2xl bg-gradient-to-br from-[#00967A] via-[#028090] to-[#1660E8]">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch min-h-[500px]">
             {/* Left Column: Heading exactly as requested: "Your account, **protected.**" */}
@@ -242,9 +246,9 @@ export const DeviceVerificationGate: React.FC<{ children: React.ReactNode }> = (
             </div>
 
             {/* Right Column: Pixel-perfect White Card */}
-            <div className="md:col-span-7 bg-white rounded-[24px] p-6 sm:p-10 flex flex-col justify-between shadow-sm min-h-[460px] text-left">
+            <div className="md:col-span-7 bg-white dark:bg-slate-900 rounded-[24px] p-6 sm:p-10 flex flex-col justify-between shadow-sm min-h-[460px] text-left transition-colors">
               {errorMessage && (
-                <div className="p-3 mb-4 bg-rose-50 border border-rose-200 text-rose-600 text-xs rounded-xl flex items-start gap-2">
+                <div className="p-3 mb-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-600 dark:text-rose-400 text-xs rounded-xl flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
                   <span>{errorMessage}</span>
                 </div>
@@ -253,7 +257,7 @@ export const DeviceVerificationGate: React.FC<{ children: React.ReactNode }> = (
               <form onSubmit={handleEnrollSubmit} className="space-y-8 my-auto">
                 {/* Set your 4-Digit Z-PIN */}
                 <div>
-                  <label className="text-xs sm:text-sm font-semibold text-slate-800 mb-3 block">
+                  <label className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 mb-3 block">
                     Set your 4-Digit Z-PIN
                   </label>
                   <div className="flex items-center gap-3 sm:gap-4">
@@ -269,7 +273,7 @@ export const DeviceVerificationGate: React.FC<{ children: React.ReactNode }> = (
                         onKeyDown={(e) => handleKeyDown(idx, e, enrollPinDigits, enrollInputsRef)}
                         onPaste={(e) => handlePaste(e, setEnrollPinDigits, enrollInputsRef)}
                         placeholder="0"
-                        className="w-12 h-12 sm:w-14 sm:h-14 text-center text-lg sm:text-xl font-bold bg-[#F4F5F7] border border-slate-200/90 rounded-xl focus:border-[#1865E8] focus:bg-white text-slate-800 outline-none transition-all placeholder:text-slate-400"
+                        className="w-12 h-12 sm:w-14 sm:h-14 text-center text-lg sm:text-xl font-bold bg-[#F4F5F7] dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl focus:border-[#1865E8] focus:bg-white dark:focus:bg-slate-800 text-slate-800 dark:text-white outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                       />
                     ))}
                   </div>
@@ -277,7 +281,7 @@ export const DeviceVerificationGate: React.FC<{ children: React.ReactNode }> = (
 
                 {/* Confirm your Z-PIN */}
                 <div>
-                  <label className="text-xs sm:text-sm font-semibold text-slate-800 mb-3 block">
+                  <label className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 mb-3 block">
                     Confirm your Z-PIN
                   </label>
                   <div className="flex items-center gap-3 sm:gap-4">
@@ -293,7 +297,7 @@ export const DeviceVerificationGate: React.FC<{ children: React.ReactNode }> = (
                         onKeyDown={(e) => handleKeyDown(idx, e, confirmPinDigits, confirmInputsRef)}
                         onPaste={(e) => handlePaste(e, setConfirmPinDigits, confirmInputsRef)}
                         placeholder="0"
-                        className="w-12 h-12 sm:w-14 sm:h-14 text-center text-lg sm:text-xl font-bold bg-[#F4F5F7] border border-slate-200/90 rounded-xl focus:border-[#1865E8] focus:bg-white text-slate-800 outline-none transition-all placeholder:text-slate-400"
+                        className="w-12 h-12 sm:w-14 sm:h-14 text-center text-lg sm:text-xl font-bold bg-[#F4F5F7] dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl focus:border-[#1865E8] focus:bg-white dark:focus:bg-slate-800 text-slate-800 dark:text-white outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                       />
                     ))}
                   </div>
@@ -324,7 +328,7 @@ export const DeviceVerificationGate: React.FC<{ children: React.ReactNode }> = (
   // 4. Verification Mode (Entering 4-Digit Z-PIN from Unrecognized Browser)
   if (requiresVerification) {
     return (
-      <div className="min-h-screen bg-[#F0F2F6] flex items-center justify-center p-4 sm:p-8 font-sans">
+      <div className="min-h-screen bg-[#F0F2F6] dark:bg-slate-950 flex items-center justify-center p-4 sm:p-8 font-sans transition-colors">
         <div className="w-full max-w-[1040px] rounded-[32px] p-5 sm:p-7 shadow-2xl bg-gradient-to-br from-[#00967A] via-[#028090] to-[#1660E8]">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch min-h-[500px]">
             {/* Left Column: Heading "Your account, **protected.**" */}
@@ -354,9 +358,9 @@ export const DeviceVerificationGate: React.FC<{ children: React.ReactNode }> = (
             </div>
 
             {/* Right Column: White Inner Card for PIN Entry */}
-            <div className="md:col-span-7 bg-white rounded-[24px] p-6 sm:p-10 flex flex-col justify-between shadow-sm min-h-[460px] text-left">
+            <div className="md:col-span-7 bg-white dark:bg-slate-900 rounded-[24px] p-6 sm:p-10 flex flex-col justify-between shadow-sm min-h-[460px] text-left transition-colors">
               {cooldownSeconds > 0 ? (
-                <div className="p-3.5 mb-4 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-start gap-2">
+                <div className="p-3.5 mb-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs rounded-xl flex items-start gap-2">
                   <Lock className="w-4 h-4 mr-1 shrink-0 mt-0.5 text-rose-500" />
                   <div>
                     <p className="font-bold">Verification Temporarily Locked</p>
@@ -367,7 +371,7 @@ export const DeviceVerificationGate: React.FC<{ children: React.ReactNode }> = (
                   </div>
                 </div>
               ) : errorMessage ? (
-                <div className="p-3 mb-4 bg-rose-50 border border-rose-200 text-rose-600 text-xs rounded-xl flex items-start gap-2">
+                <div className="p-3 mb-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-600 dark:text-rose-400 text-xs rounded-xl flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
                   <span>{errorMessage}</span>
                 </div>
@@ -376,7 +380,7 @@ export const DeviceVerificationGate: React.FC<{ children: React.ReactNode }> = (
               <form onSubmit={handleVerifySubmit} className="space-y-8 my-auto">
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <label className="text-xs sm:text-sm font-semibold text-slate-800">
+                    <label className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200">
                       Enter your 4-Digit Z-PIN
                     </label>
                     {rateLimit && cooldownSeconds === 0 && (
@@ -400,7 +404,7 @@ export const DeviceVerificationGate: React.FC<{ children: React.ReactNode }> = (
                         onKeyDown={(e) => handleKeyDown(idx, e, pinDigits, digitInputsRef)}
                         onPaste={(e) => handlePaste(e, setPinDigits, digitInputsRef)}
                         placeholder="0"
-                        className="w-12 h-12 sm:w-14 sm:h-14 text-center text-lg sm:text-xl font-bold bg-[#F4F5F7] border border-slate-200/90 rounded-xl focus:border-[#1865E8] focus:bg-white text-slate-800 outline-none transition-all placeholder:text-slate-400 disabled:opacity-50"
+                        className="w-12 h-12 sm:w-14 sm:h-14 text-center text-lg sm:text-xl font-bold bg-[#F4F5F7] dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl focus:border-[#1865E8] focus:bg-white dark:focus:bg-slate-800 text-slate-800 dark:text-white outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 disabled:opacity-50"
                       />
                     ))}
                   </div>

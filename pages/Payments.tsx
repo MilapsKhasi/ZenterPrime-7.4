@@ -9,6 +9,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import PageHeader from '../components/PageHeader';
 import SectionIcon from '../components/SectionIcon';
 import { supabase } from '../lib/supabase';
+import { ActionMenu } from '../components/ActionMenu';
 import { useLicense } from '../context/LicenseContext';
 import { useSecurityDemo } from '../context/SecurityDemoContext';
 
@@ -818,28 +819,23 @@ const Payments: React.FC<PaymentsProps> = ({ typeFilter }) => {
                         {voucher.description || '—'}
                       </td>
                       <td className="py-4 px-6 text-center" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-center space-x-1">
-                          {!isReadOnly ? (
-                            <>
-                              <button
-                                onClick={() => handleEditVoucher(voucher)}
-                                className="p-1 text-slate-400 hover:text-primary rounded transition-colors"
-                                title="Edit Voucher"
-                              >
-                                <Edit className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteVoucher(voucher)}
-                                className="p-1 text-slate-400 hover:text-red-500 rounded transition-colors"
-                                title="Delete Voucher"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </>
-                          ) : (
-                            <span className="text-[10px] text-slate-400 italic">Read Only</span>
-                          )}
-                        </div>
+                        <ActionMenu
+                          items={[
+                            {
+                              label: 'Edit Voucher',
+                              icon: Edit,
+                              disabled: isReadOnly,
+                              onClick: () => handleEditVoucher(voucher)
+                            },
+                            {
+                              label: 'Delete Voucher',
+                              icon: Trash2,
+                              variant: 'danger',
+                              disabled: isReadOnly,
+                              onClick: () => handleDeleteVoucher(voucher)
+                            }
+                          ]}
+                        />
                       </td>
                     </tr>
                   );

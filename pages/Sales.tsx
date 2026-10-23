@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, Loader2, Edit, Trash2, Plus, Printer, FileText, Lock } from 'lucide-react';
+import { Search, Loader2, Edit, Trash2, Plus, Printer, FileText, Lock, ArrowDownCircle } from 'lucide-react';
 import { formatDate, formatCurrency, getActiveCompanyId, normalizeBill, unsyncTransactionFromCashbook } from '../utils/helpers';
 import Modal from '../components/Modal';
 import SalesInvoiceForm from '../components/SalesInvoiceForm';
@@ -12,6 +12,8 @@ import PageHeader from '../components/PageHeader';
 import SectionIcon from '../components/SectionIcon';
 import { supabase } from '../lib/supabase';
 import { InvoicePrintModal } from '../components/InvoicePrintModal';
+import { PaymentVoucherModal } from '../components/PaymentVoucherModal';
+import { ActionMenu, ActionMenuItem } from '../components/ActionMenu';
 import { useLicense } from '../context/LicenseContext';
 import { useSecurityDemo } from '../context/SecurityDemoContext';
 
@@ -24,6 +26,12 @@ const Sales = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<any | null>(null);
   const [printModalInvoice, setPrintModalInvoice] = useState<any | null>(null);
+  const [settlePayment, setSettlePayment] = useState<{
+    isOpen: boolean;
+    partyName: string;
+    billId: string;
+    amount: number;
+  } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<{ startDate: string | null, endDate: string | null }>({ startDate: null, endDate: null });
@@ -339,25 +347,48 @@ const Sales = () => {
                       <td className="py-4 px-6 text-right font-mono text-slate-600 dark:text-slate-400 text-sm">{formatCurrency(inv.total_gst)}</td>
                       <td className="py-4 px-6 text-right font-mono font-bold text-slate-900 dark:text-white text-base tabular-nums">{formatCurrency(inv.grand_total)}</td>
                       <td className="py-4 px-6 text-center" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-center space-x-1">
-                          <button
-                            onClick={() => verifyAction('Print Invoice', () => setPrintModalInvoice(inv))}
-                            className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-md transition-colors cursor-pointer"
-                            title="Print Invoice"
-                          >
-                            <Printer className="w-4 h-4" />
-                          </button>
-                          {!isReadOnly && (
-                            <>
-                              <button onClick={() => { setEditingInvoice(inv); setIsModalOpen(true); }} className="p-1.5 text-slate-400 hover:text-primary rounded-md transition-colors" title="Edit Invoice">
-                                <Edit className="w-4 h-4" />
-                              </button>
-                              <button onClick={() => verifyAction('Delete Invoice', () => setDeleteDialog({ isOpen: true, invoice: inv }))} className="p-1.5 text-slate-400 hover:text-red-500 rounded-md transition-colors cursor-pointer" title="Delete Invoice">
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </>
-                          )}
-                        </div>
+                        <ActionMenu
+                          items={[
+                            {
+                              label: 'Settle Payment',
+                              icon: ArrowDownCircle,
+                              variant: 'success',
+                              onClick: () => {
+                                setSettlePayment({
+                                  isOpen: true,
+                                  partyName: inv.vendor_name || inv.customer_name || '',
+                                  billId: inv.id,
+                                  amount: Number(inv.grand_total || 0)
+                                });
+                              }
+                            },
+                            {
+                              label: 'Edit Invoice',
+                              icon: Edit,
+                              disabled: isReadOnly,
+                              onClick: () => {
+                                setEditingInvoice(inv);
+                                setIsModalOpen(true);
+                              }
+                            },
+                            {
+                              label: 'Print Invoice',
+                              icon: Printer,
+                              onClick: () => {
+                                verifyAction('Print Invoice', () => setPrintModalInvoice(inv));
+                              }
+                            },
+                            {
+                              label: 'Delete Invoice',
+                              icon: Trash2,
+                              variant: 'danger',
+                              disabled: isReadOnly,
+                              onClick: () => {
+                                verifyAction('Delete Invoice', () => setDeleteDialog({ isOpen: true, invoice: inv }));
+                              }
+                            }
+                          ]}
+                        />
                       </td>
                     </tr>
                   );
@@ -373,6 +404,21 @@ const Sales = () => {
         onClose={() => setPrintModalInvoice(null)} 
         invoice={printModalInvoice} 
       />
+
+      {settlePayment?.isOpen && (
+        <PaymentVoucherModal
+          isOpen={settlePayment.isOpen}
+          onClose={() => setSettlePayment(null)}
+          initialType="Receipt"
+          initialPartyName={settlePayment.partyName}
+          initialBillId={settlePayment.billId}
+          initialAmount={settlePayment.amount}
+          onSuccess={() => {
+            setSettlePayment(null);
+            loadData();
+          }}
+        />
+      )}
     </div>
   );
 };

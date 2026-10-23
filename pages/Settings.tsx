@@ -56,8 +56,30 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
     return { enabled: s.gstEnabled, type: s.gstType || 'CGST - SGST' };
   });
 
-  // Appearance State
-  const [theme, setTheme] = useState(() => localStorage.getItem('app_theme') || 'light');
+  // Appearance State (Light / Dark Mode Toggle)
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return document.documentElement.classList.contains('dark') || localStorage.getItem('app_theme') === 'dark';
+  });
+
+  useEffect(() => {
+    const handleSettingsChange = () => {
+      setIsDarkMode(document.documentElement.classList.contains('dark') || localStorage.getItem('app_theme') === 'dark');
+    };
+    window.addEventListener('appSettingsChanged', handleSettingsChange);
+    return () => window.removeEventListener('appSettingsChanged', handleSettingsChange);
+  }, []);
+
+  const setDarkMode = (enableDark: boolean) => {
+    setIsDarkMode(enableDark);
+    if (enableDark) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('app_theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('app_theme', 'light');
+    }
+    window.dispatchEvent(new Event('appSettingsChanged'));
+  };
 
   // License State
   const [licenseKeyInput, setLicenseKeyInput] = useState('');
@@ -288,16 +310,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
     }
   };
 
-  const applyTheme = (newTheme: string) => {
-    setTheme(newTheme);
-    localStorage.setItem('app_theme', newTheme);
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    window.dispatchEvent(new Event('appSettingsChanged'));
-  };
+
 
   const isCompanyRegistered = Boolean(workspaceInfo.gstin && workspaceInfo.gstin.trim().length > 0);
   const canEnableGst = isCompanyRegistered;
@@ -684,50 +697,86 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
           )}
 
           {/* TAB 3: Appearance */}
+          {/* TAB 3: Appearance */}
           {activeTab === 'appearance' && (
             <div className="space-y-6">
               <div className="pb-4 border-b border-slate-100 dark:border-slate-800">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Appearance & Theme</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Customize visual tone and display themes.</p>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Theme & Display Mode</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Choose between light and dark display modes for the application.</p>
               </div>
 
+              {/* Mode Selection Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* 1. Light Mode Card */}
                 <button
                   type="button"
-                  onClick={() => applyTheme('light')}
-                  className={`p-5 rounded-xl border text-left transition-all flex flex-col justify-between ${
-                    theme === 'light'
-                      ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                  onClick={() => setDarkMode(false)}
+                  className={`p-5 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
+                    !isDarkMode
+                      ? 'border-primary bg-primary/5 dark:bg-primary/10 ring-2 ring-primary/20'
                       : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-4">
-                    <Sun className="w-6 h-6 text-amber-500" />
-                    {theme === 'light' && <CheckCircle2 className="w-5 h-5 text-primary" />}
+                    <div className="w-10 h-10 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+                      <Sun className="w-5 h-5" />
+                    </div>
+                    {!isDarkMode && <CheckCircle2 className="w-5 h-5 text-primary" />}
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-slate-900 dark:text-white">Light Mode</h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Crisp, clean layout for standard daytime work.</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Clean, high-visibility bright theme optimized for daytime accounting and billing.</p>
                   </div>
                 </button>
 
+                {/* 2. Dark Mode Card */}
                 <button
                   type="button"
-                  onClick={() => applyTheme('dark')}
-                  className={`p-5 rounded-xl border text-left transition-all flex flex-col justify-between ${
-                    theme === 'dark'
-                      ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                  onClick={() => setDarkMode(true)}
+                  className={`p-5 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
+                    isDarkMode
+                      ? 'border-primary bg-primary/5 dark:bg-primary/10 ring-2 ring-primary/20'
                       : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-4">
-                    <Moon className="w-6 h-6 text-indigo-400" />
-                    {theme === 'dark' && <CheckCircle2 className="w-5 h-5 text-primary" />}
+                    <div className="w-10 h-10 rounded-lg bg-slate-800 text-amber-300 flex items-center justify-center">
+                      <Moon className="w-5 h-5" />
+                    </div>
+                    {isDarkMode && <CheckCircle2 className="w-5 h-5 text-primary" />}
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-slate-900 dark:text-white">Dark Mode</h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Eye-friendly deep dark canvas for low light.</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Deep, comfortable dark theme designed to reduce eye strain in low-light environments.</p>
                   </div>
+                </button>
+              </div>
+
+              {/* Direct Toggle Row */}
+              <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                    {isDarkMode ? <Moon className="w-4 h-4 text-amber-400" /> : <Sun className="w-4 h-4 text-amber-500" />}
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">Dark Mode</h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Currently using {isDarkMode ? 'Dark' : 'Light'} theme
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDarkMode(!isDarkMode)}
+                  className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none cursor-pointer ${
+                    isDarkMode ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-700'
+                  }`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      isDarkMode ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
                 </button>
               </div>
             </div>

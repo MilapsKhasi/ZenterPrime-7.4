@@ -221,7 +221,7 @@ CREATE POLICY "Manage own OTPs" ON public.login_verifications FOR ALL TO authent
   };
 
   if (authLoading || companyLoading) return (
-    <div className="h-screen w-screen flex items-center justify-center bg-white">
+    <div className="h-screen w-screen flex items-center justify-center bg-white dark:bg-slate-950">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
     </div>
   );

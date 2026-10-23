@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  Printer, ArrowUpRight, ArrowDownLeft 
+  Printer, ArrowUpRight, ArrowDownLeft, ArrowUpCircle 
 } from 'lucide-react';
 import DateFilter from '../components/DateFilter';
 import ExportModal from '../components/ExportModal';
@@ -20,12 +20,21 @@ import {
 import { exportToExcel, exportToCSV, triggerPrint } from '../utils/exportHelper';
 import { supabase } from '../lib/supabase';
 import { useSecurityDemo } from '../context/SecurityDemoContext';
+import { ActionMenu } from '../components/ActionMenu';
+import { PaymentVoucherModal } from '../components/PaymentVoucherModal';
 
 const Reports: React.FC = () => {
   const { verifyAction } = useSecurityDemo();
   const [activeTab, setActiveTab] = useState<ReportTabId>('Sales Register');
   const [loading, setLoading] = useState(true);
   const [companyInfo, setCompanyInfo] = useState<any>(null);
+  const [settlePayment, setSettlePayment] = useState<{
+    isOpen: boolean;
+    type: 'Receipt' | 'Payment';
+    partyName: string;
+    billId: string;
+    amount: number;
+  } | null>(null);
 
   // Raw data from database
   const [salesData, setSalesData] = useState<any[]>([]);
@@ -1107,6 +1116,7 @@ const Reports: React.FC = () => {
                   <th className="py-3 px-4 text-right w-32">Paid Amount</th>
                   <th className="py-3 px-4 text-right w-36">Pending Due</th>
                   <th className="py-3 px-4 text-center w-24">Status</th>
+                  <th className="py-3 px-4 text-center w-20">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200">
@@ -1123,6 +1133,26 @@ const Reports: React.FC = () => {
                       <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">
                         Pending
                       </span>
+                    </td>
+                    <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                      <ActionMenu
+                        items={[
+                          {
+                            label: 'Settle Payment',
+                            icon: ArrowDownLeft,
+                            variant: 'success',
+                            onClick: () => {
+                              setSettlePayment({
+                                isOpen: true,
+                                type: 'Receipt',
+                                partyName: inv.customer_name || inv.vendor_name || '',
+                                billId: inv.id,
+                                amount: Number(inv.outstanding ?? inv.grand_total ?? 0)
+                              });
+                            }
+                          }
+                        ]}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -1213,6 +1243,7 @@ const Reports: React.FC = () => {
                   <th className="py-3 px-4 text-right w-32">Paid Amount</th>
                   <th className="py-3 px-4 text-right w-36">Pending Due</th>
                   <th className="py-3 px-4 text-center w-24">Status</th>
+                  <th className="py-3 px-4 text-center w-20">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200">
@@ -1229,6 +1260,26 @@ const Reports: React.FC = () => {
                       <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">
                         Pending
                       </span>
+                    </td>
+                    <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                      <ActionMenu
+                        items={[
+                          {
+                            label: 'Settle Payment',
+                            icon: ArrowUpCircle,
+                            variant: 'success',
+                            onClick: () => {
+                              setSettlePayment({
+                                isOpen: true,
+                                type: 'Payment',
+                                partyName: b.vendor_name || b.customer_name || '',
+                                billId: b.id,
+                                amount: Number(b.outstanding ?? b.grand_total ?? 0)
+                              });
+                            }
+                          }
+                        ]}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -1680,6 +1731,21 @@ const Reports: React.FC = () => {
           </div>
         )}
       </ReportsEngineShell>
+
+      {settlePayment?.isOpen && (
+        <PaymentVoucherModal
+          isOpen={settlePayment.isOpen}
+          onClose={() => setSettlePayment(null)}
+          initialType={settlePayment.type}
+          initialPartyName={settlePayment.partyName}
+          initialBillId={settlePayment.billId}
+          initialAmount={settlePayment.amount}
+          onSuccess={() => {
+            setSettlePayment(null);
+            loadData();
+          }}
+        />
+      )}
     </>
   );
 };

@@ -125,59 +125,67 @@ const SimplifiedPurchaseForm: React.FC<SimplifiedPurchaseFormProps> = ({ initial
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1">
-          <label className="text-[10px] font-bold text-slate-500 uppercase">Date</label>
-          {/* Fixed: Replaced getDatePlaceholder() with hardcoded placeholder string */}
-          <input required value={formData.displayDate || ''} onChange={(e) => setFormData({...formData, displayDate: e.target.value})} onBlur={handleDateBlur} placeholder="DD/MM/YYYY" className="w-full px-3 py-2 border border-slate-200 rounded text-sm outline-none focus:border-slate-400" />
+    <form onSubmit={handleSubmit} className="p-6 space-y-6 bg-white dark:bg-slate-900">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Date</label>
+          <input required value={formData.displayDate || ''} onChange={(e) => setFormData({...formData, displayDate: e.target.value})} onBlur={handleDateBlur} placeholder="DD/MM/YYYY" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white outline-none text-sm focus:border-slate-500" />
         </div>
-        <div className="space-y-1">
-          <label className="text-[10px] font-bold text-slate-500 uppercase">Bill Number</label>
-          <input required value={formData.bill_number || ''} onChange={(e) => setFormData({...formData, bill_number: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded text-sm font-mono outline-none focus:border-slate-400" />
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Bill Number</label>
+          <input required value={formData.bill_number || ''} onChange={(e) => setFormData({...formData, bill_number: e.target.value})} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white outline-none text-sm font-medium focus:border-slate-500" />
         </div>
       </div>
-      <div className="space-y-1">
-        <label className="text-[10px] font-bold text-slate-500 uppercase">Vendor</label>
-        <input required value={formData.vendor_name || ''} onChange={(e) => setFormData({...formData, vendor_name: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded text-sm outline-none focus:border-slate-400" />
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Vendor Name</label>
+        <input required value={formData.vendor_name || ''} onChange={(e) => setFormData({...formData, vendor_name: e.target.value})} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white outline-none text-sm focus:border-slate-500 uppercase" />
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-1">
-          <label className="text-[10px] font-bold text-slate-500 uppercase">Taxable Amount (Without GST)</label>
-          <input type="number" step="0.01" value={formData.total_without_gst || 0} onChange={(e) => updateAmounts(Number(e.target.value), formData.total_gst)} className="w-full px-3 py-2 border border-slate-200 rounded text-sm font-medium outline-none focus:border-slate-400" />
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Taxable Amount (Without GST)</label>
+          <input type="number" step="0.01" value={formData.total_without_gst || 0} onChange={(e) => updateAmounts(Number(e.target.value), formData.total_gst)} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white outline-none text-sm font-medium focus:border-slate-500" />
         </div>
-        <div className="space-y-1">
-          <label className="text-[10px] font-bold text-slate-500 uppercase">GST Amount</label>
-          <input type="number" step="0.01" value={formData.total_gst || 0} onChange={(e) => updateAmounts(formData.total_without_gst, Number(e.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded text-sm font-medium outline-none focus:border-slate-400" />
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">GST Amount</label>
+          <input type="number" step="0.01" value={formData.total_gst || 0} onChange={(e) => updateAmounts(formData.total_without_gst, Number(e.target.value))} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white outline-none text-sm font-medium focus:border-slate-500" />
         </div>
       </div>
 
-
-
-      <div className="bg-slate-50 p-6 border border-slate-200 rounded space-y-3 boxy-shadow">
-          <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase">
+      <div className="bg-slate-50 dark:bg-slate-800/50 p-4 border border-slate-200 dark:border-slate-800 space-y-2">
+          <div className="flex justify-between items-center text-xs text-slate-600 dark:text-slate-400">
               <span>Without GST</span>
-              <span className="text-slate-700 font-mono">{formatCurrency(formData.total_without_gst)}</span>
+              <span className="font-medium text-slate-900 dark:text-white">{formatCurrency(formData.total_without_gst)}</span>
           </div>
-          <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase">
+          <div className="flex justify-between items-center text-xs text-slate-600 dark:text-slate-400">
               <span>GST Total</span>
-              <span className="text-slate-700 font-mono">{formatCurrency(formData.total_gst)}</span>
+              <span className="font-medium text-slate-900 dark:text-white">{formatCurrency(formData.total_gst)}</span>
           </div>
-          <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase italic">
+          <div className="flex justify-between items-center text-xs text-slate-600 dark:text-slate-400 italic">
               <span>Round Off</span>
-              <span className="text-slate-500 font-mono">{formData.round_off >= 0 ? '+' : ''}{(formData.round_off || 0).toFixed(2)}</span>
+              <span className="font-medium text-slate-900 dark:text-white">{formData.round_off >= 0 ? '+' : ''}{(formData.round_off || 0).toFixed(2)}</span>
           </div>
-          <div className="flex justify-between items-center pt-3 border-t border-slate-300">
-              <span className="text-xs font-bold text-slate-900 uppercase">Grand Total</span>
-              <span className="text-2xl font-semibold text-slate-900">{formatCurrency(formData.grand_total)}</span>
+          <div className="flex justify-between items-center pt-3 border-t border-slate-200 dark:border-slate-700">
+              <span className="text-sm font-semibold text-slate-900 dark:text-white">Grand Total</span>
+              <span className="text-lg font-bold text-slate-900 dark:text-white">{formatCurrency(formData.grand_total)}</span>
           </div>
       </div>
 
-      <div className="flex justify-end space-x-3 pt-4 border-t border-slate-100">
-        <button type="button" onClick={onCancel} className="px-6 py-2.5 text-slate-400 font-bold uppercase text-[10px] tracking-widest">Cancel</button>
-        <button type="submit" disabled={loading} className="px-10 py-2.5 bg-primary text-white font-bold uppercase text-[10px] tracking-widest rounded border border-slate-200 hover:bg-primary-dark transition-all shadow-sm flex items-center disabled:opacity-50">
-          {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
+      <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-200 dark:border-slate-800">
+        <button 
+          type="button" 
+          onClick={onCancel} 
+          disabled={loading}
+          className="h-10 px-4 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors cursor-pointer disabled:opacity-50"
+        >
+          Discard
+        </button>
+        <button 
+          type="submit" 
+          disabled={loading} 
+          className="h-10 px-6 bg-primary hover:bg-primary-dark text-white text-sm font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
           Save Purchase
         </button>
       </div>

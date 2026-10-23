@@ -5,6 +5,7 @@ import { getActiveCompanyId, safeSupabaseSave, getSelectedLedgerIds, toggleSelec
 import ConfirmDialog from '../components/ConfirmDialog';
 import EmptyState from '../components/EmptyState';
 import PageHeader from '../components/PageHeader';
+import { ActionMenu } from '../components/ActionMenu';
 import { useLicense } from '../context/LicenseContext';
 
 const isGstLedger = (name: string) => {
@@ -135,83 +136,87 @@ const AdditionalCharges = () => {
       {isModalOpen && (
         <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-slate-900/30" onClick={() => setIsModalOpen(false)} />
-            <div className="relative bg-white w-full max-w-[650px] border border-slate-300 overflow-hidden rounded-md flex flex-col max-h-[90vh]">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white shrink-0">
-                    <h2 className="text-[18px] font-medium text-slate-900 capitalize">{editingTax ? "Edit Charge/Deduction" : "Create New Charge/Deduction"}</h2>
-                    <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-none">
+            <div className="relative bg-white dark:bg-slate-900 w-full max-w-[650px] border border-slate-300 dark:border-slate-700 overflow-hidden flex flex-col max-h-[90vh]">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+                    <h2 className="text-lg font-medium text-slate-900 dark:text-white">{editingTax ? "Edit Charge / Deduction" : "Create New Charge / Deduction"}</h2>
+                    <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden bg-white">
-                    <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-6 bg-white custom-scrollbar">
-                        <div className="border border-slate-200 rounded-md p-4 sm:p-8 space-y-6 bg-white">
-                            <div className="space-y-1.5">
-                                <label className="text-[14px] font-medium text-slate-900 dark:text-white capitalize">Charge/Deduction Name</label>
-                                <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded outline-none text-[14px] focus:border-slate-400 bg-white dark:bg-slate-800 dark:text-white" placeholder="Freight, Labour, Discount, etc..." />
-                            </div>
+                <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-slate-900">
+                    <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white dark:bg-slate-900 custom-scrollbar">
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Charge / Deduction Name</label>
+                            <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 outline-none text-sm focus:border-slate-500 bg-white dark:bg-slate-800 dark:text-white" placeholder="Freight, Labour, Discount, etc..." />
+                        </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                <div className="space-y-1.5">
-                                    <label className="text-[14px] font-medium text-slate-900 dark:text-white capitalize">Type</label>
-                                    <div className="relative">
-                                        <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} className="w-full h-10 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded outline-none text-[14px] focus:border-slate-400 bg-white dark:bg-slate-800 dark:text-white appearance-none">
-                                            <option value="Charge" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Charge (+)</option>
-                                            <option value="Deduction" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Deduction (-)</option>
-                                        </select>
-                                        <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                                    </div>
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[14px] font-medium text-slate-900 dark:text-white capitalize">Calculation At</label>
-                                    <div className="relative">
-                                        <select value={formData.calc_method} onChange={e => setFormData({...formData, calc_method: e.target.value})} className="w-full h-10 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded outline-none text-[14px] focus:border-slate-400 bg-white dark:bg-slate-800 dark:text-white appearance-none">
-                                            <option value="Percentage" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Percentage</option>
-                                            <option value="Fixed" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Fixed Amount</option>
-                                        </select>
-                                        <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                                    </div>
-                                </div>
-                            </div>
-
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <div className="space-y-1.5">
-                                <label className="text-[14px] font-medium text-slate-900 dark:text-white capitalize">Applicable To</label>
+                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Type</label>
                                 <div className="relative">
-                                    <select value={formData.applicable_to || 'Both'} onChange={e => setFormData({...formData, applicable_to: e.target.value})} className="w-full h-10 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded outline-none text-[14px] focus:border-slate-400 bg-white dark:bg-slate-800 dark:text-white appearance-none">
-                                        <option value="Both" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Both (Sales & Purchase)</option>
-                                        <option value="Sales Invoices" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Sales Invoices</option>
-                                        <option value="Purchase Bills" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Purchase Bills</option>
+                                    <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} className="w-full h-10 px-3 py-2 border border-slate-300 dark:border-slate-700 outline-none text-sm focus:border-slate-500 bg-white dark:bg-slate-800 dark:text-white appearance-none">
+                                        <option value="Charge" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Charge (+)</option>
+                                        <option value="Deduction" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Deduction (-)</option>
                                     </select>
                                     <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                                 </div>
                             </div>
-
                             <div className="space-y-1.5">
-                                <label className="text-[14px] font-medium text-slate-900 capitalize">Default Value</label>
-                                <input type="number" step="0.01" value={formData.calc_method === 'Percentage' ? formData.rate : formData.fixed_amount} onChange={e => setFormData({...formData, [formData.calc_method === 'Percentage' ? 'rate' : 'fixed_amount']: parseFloat(e.target.value) || 0})} className="w-full px-4 py-2 border border-slate-200 rounded outline-none text-[14px] focus:border-slate-400 bg-white font-mono" placeholder="0.00" />
+                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Calculation Method</label>
+                                <div className="relative">
+                                    <select value={formData.calc_method} onChange={e => setFormData({...formData, calc_method: e.target.value})} className="w-full h-10 px-3 py-2 border border-slate-300 dark:border-slate-700 outline-none text-sm focus:border-slate-500 bg-white dark:bg-slate-800 dark:text-white appearance-none">
+                                        <option value="Percentage" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Percentage</option>
+                                        <option value="Fixed" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Fixed Amount</option>
+                                    </select>
+                                    <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                </div>
                             </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Applicable To</label>
+                            <div className="relative">
+                                <select value={formData.applicable_to || 'Both'} onChange={e => setFormData({...formData, applicable_to: e.target.value})} className="w-full h-10 px-3 py-2 border border-slate-300 dark:border-slate-700 outline-none text-sm focus:border-slate-500 bg-white dark:bg-slate-800 dark:text-white appearance-none">
+                                    <option value="Both" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Both (Sales & Purchase)</option>
+                                    <option value="Sales Invoices" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Sales Invoices</option>
+                                    <option value="Purchase Bills" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Purchase Bills</option>
+                                </select>
+                                <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                            </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Default Value</label>
+                            <input type="number" step="0.01" value={formData.calc_method === 'Percentage' ? formData.rate : formData.fixed_amount} onChange={e => setFormData({...formData, [formData.calc_method === 'Percentage' ? 'rate' : 'fixed_amount']: parseFloat(e.target.value) || 0})} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 outline-none text-sm font-medium focus:border-slate-500 bg-white dark:bg-slate-800 dark:text-white" placeholder="0.00" />
                         </div>
                     </div>
 
-                    <div className="px-4 sm:px-8 py-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-end gap-4 bg-white shrink-0">
-                        <button type="button" onClick={() => setIsModalOpen(false)} className="text-[13px] text-slate-500 hover:text-slate-800 transition-none font-medium capitalize w-full sm:w-auto">Discard</button>
+                    <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-3 bg-white dark:bg-slate-900 shrink-0">
                         <button 
-                            type="submit"
-                            onClick={() => setIsSaveAndNew(true)}
-                            disabled={saving}
-                            className="bg-emerald-600 text-white px-6 py-2.5 rounded font-medium text-[14px] hover:bg-emerald-700 transition-none flex items-center justify-center capitalize w-full sm:w-auto"
+                            type="button" 
+                            onClick={() => setIsModalOpen(false)} 
+                            className="h-10 px-4 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors cursor-pointer"
                         >
-                            {saving && isSaveAndNew && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                            Save & New
+                            Discard
                         </button>
                         <button 
                             type="submit"
                             onClick={() => setIsSaveAndNew(false)}
                             disabled={saving}
-                            className="bg-primary text-white px-8 py-2.5 rounded font-medium text-[14px] hover:bg-primary-dark transition-none flex items-center justify-center capitalize w-full sm:w-auto"
+                            className="h-10 px-6 bg-primary hover:bg-primary-dark text-white text-sm font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                         >
-                            {saving && !isSaveAndNew && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                            Save Charge
+                            {saving && !isSaveAndNew && <Loader2 className="w-4 h-4 animate-spin mr-1.5" />}
+                            Save
+                        </button>
+                        <button 
+                            type="submit"
+                            onClick={() => setIsSaveAndNew(true)}
+                            disabled={saving}
+                            className="h-10 px-5 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                        >
+                            {saving && isSaveAndNew && <Loader2 className="w-4 h-4 animate-spin mr-1.5" />}
+                            Save & New
                         </button>
                     </div>
                 </form>
@@ -297,15 +302,25 @@ const AdditionalCharges = () => {
                     </td>
                     <td className="py-4 px-6 text-xs text-slate-500 capitalize">{tax.calc_method}</td>
                     <td className="py-4 px-6 font-mono font-bold text-sm text-slate-900 dark:text-white tabular-nums">{tax.calc_method === 'Percentage' ? `${tax.rate}%` : tax.fixed_amount.toFixed(2)}</td>
-                    <td className="py-4 px-6 text-right">
-                        {!isReadOnly ? (
-                          <div className="flex justify-end space-x-1">
-                            <button onClick={() => { setEditingTax(tax); setFormData({ ...tax, applicable_to: tax.applicable_to || 'Both' }); setIsModalOpen(true); }} className="p-1.5 text-slate-400 hover:text-primary rounded-md transition-colors" title="Edit Charge"><Edit className="w-4 h-4" /></button>
-                            <button onClick={() => setDeleteDialog({ isOpen: true, tax })} className="p-1.5 text-slate-400 hover:text-red-500 rounded-md transition-colors" title="Delete Charge"><Trash2 className="w-4 h-4" /></button>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-slate-400 font-mono italic">Read Only</span>
-                        )}
+                    <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
+                      <ActionMenu
+                        align="right"
+                        items={[
+                          {
+                            label: 'Edit Charge',
+                            icon: Edit,
+                            disabled: isReadOnly,
+                            onClick: () => { setEditingTax(tax); setFormData({ ...tax, applicable_to: tax.applicable_to || 'Both' }); setIsModalOpen(true); }
+                          },
+                          {
+                            label: 'Delete Charge',
+                            icon: Trash2,
+                            variant: 'danger',
+                            disabled: isReadOnly,
+                            onClick: () => setDeleteDialog({ isOpen: true, tax })
+                          }
+                        ]}
+                      />
                     </td>
                     </tr>
                 );

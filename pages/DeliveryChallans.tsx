@@ -11,6 +11,7 @@ import PageHeader from '../components/PageHeader';
 import SectionIcon from '../components/SectionIcon';
 import { supabase } from '../lib/supabase';
 import { InvoicePrintModal } from '../components/InvoicePrintModal';
+import { ActionMenu } from '../components/ActionMenu';
 import { useLicense } from '../context/LicenseContext';
 import { useSecurityDemo } from '../context/SecurityDemoContext';
 
@@ -314,36 +315,35 @@ export const DeliveryChallans = () => {
                         </span>
                       </td>
                       <td className="py-4 px-6 text-center" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-center space-x-1">
-                          <button
-                            onClick={() => verifyAction('Print Delivery Challan', () => setPrintModalChallan(c))}
-                            className="p-1.5 text-slate-400 hover:text-emerald-600 rounded-md transition-colors cursor-pointer"
-                            title="Print Delivery Challan"
-                          >
-                            <Printer className="w-4 h-4" />
-                          </button>
-                          {!isReadOnly && (
-                            <>
-                              <button
-                                onClick={() => {
-                                  setEditingChallan(c);
-                                  setIsModalOpen(true);
-                                }}
-                                className="p-1 text-slate-400 hover:text-primary rounded transition-colors"
-                                title="Edit Challan"
-                              >
-                                <Edit className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => verifyAction('Delete Challan', () => setDeleteDialog({ isOpen: true, challan: c }))}
-                                className="p-1 text-slate-400 hover:text-red-500 rounded transition-colors cursor-pointer"
-                                title="Delete Challan"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </>
-                          )}
-                        </div>
+                        <ActionMenu
+                          items={[
+                            {
+                              label: 'Print Challan',
+                              icon: Printer,
+                              onClick: () => {
+                                verifyAction('Print Delivery Challan', () => setPrintModalChallan(c));
+                              }
+                            },
+                            {
+                              label: 'Edit Challan',
+                              icon: Edit,
+                              disabled: isReadOnly,
+                              onClick: () => {
+                                setEditingChallan(c);
+                                setIsModalOpen(true);
+                              }
+                            },
+                            {
+                              label: 'Delete Challan',
+                              icon: Trash2,
+                              variant: 'danger',
+                              disabled: isReadOnly,
+                              onClick: () => {
+                                verifyAction('Delete Challan', () => setDeleteDialog({ isOpen: true, challan: c }));
+                              }
+                            }
+                          ]}
+                        />
                       </td>
                     </tr>
                   );

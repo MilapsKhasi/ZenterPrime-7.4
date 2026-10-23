@@ -105,18 +105,18 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onSubmit, 
     <Modal isOpen={isOpen} onClose={onClose} title={`Payment Details - Bill ${billNumber}`} maxWidth="max-w-2xl">
       <div className="flex flex-col">
         <div className="p-6 space-y-6">
-          <div className="grid grid-cols-3 gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
+          <div className="grid grid-cols-3 gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800">
             <div className="text-center">
-              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Bill Amount</p>
-              <p className="text-sm font-mono font-bold text-slate-900 dark:text-white">{formatCurrency(totalAmount)}</p>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Bill Amount</p>
+              <p className="text-sm font-bold text-slate-900 dark:text-white">{formatCurrency(totalAmount)}</p>
             </div>
             <div className="text-center border-x border-slate-200 dark:border-slate-700">
-              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Total Paid</p>
-              <p className="text-sm font-mono font-bold text-emerald-500">{formatCurrency(totalPaid)}</p>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Total Paid</p>
+              <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(totalPaid)}</p>
             </div>
             <div className="text-center">
-              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Balance</p>
-              <p className={`text-sm font-mono font-bold ${balance > 0 ? 'text-amber-500' : balance < 0 ? 'text-red-500' : 'text-slate-400'}`}>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Balance</p>
+              <p className={`text-sm font-bold ${balance > 0 ? 'text-amber-600' : balance < 0 ? 'text-red-600' : 'text-slate-400'}`}>
                 {formatCurrency(balance)}
               </p>
             </div>
@@ -124,11 +124,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onSubmit, 
 
           <div className="space-y-4">
             {payments.map((p, idx) => (
-              <div key={p.id} className="relative p-4 border border-slate-200 dark:border-slate-800 rounded-xl space-y-4 bg-white dark:bg-slate-900 group">
+              <div key={p.id} className="p-4 border border-slate-200 dark:border-slate-800 space-y-4 bg-white dark:bg-slate-900">
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Payment #{idx + 1}</span>
+                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Payment Entry #{idx + 1}</span>
                   {payments.length > 1 && (
-                    <button type="button" onClick={() => removePayment(p.id)} className="text-slate-300 hover:text-red-500 transition-colors">
+                    <button type="button" onClick={() => removePayment(p.id)} className="text-slate-400 hover:text-red-500 transition-colors cursor-pointer">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   )}
@@ -136,22 +136,22 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onSubmit, 
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Date</label>
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Date</label>
                     <input 
                       required 
                       value={p.displayDate} 
                       onChange={e => updatePayment(p.id, 'displayDate', e.target.value)} 
                       onBlur={() => handleBlurDate(p.id)}
-                      className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-lg outline-none text-xs focus:ring-2 focus:ring-primary/20 transition-all" 
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white outline-none text-sm focus:border-slate-500" 
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Method</label>
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Payment Method</label>
                     <select 
                       value={p.method} 
                       onChange={e => updatePayment(p.id, 'method', e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-lg outline-none text-xs appearance-none cursor-pointer focus:ring-2 focus:ring-primary/20 transition-all"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white outline-none text-sm appearance-none cursor-pointer focus:border-slate-500"
                     >
                       <option value="Cash" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Cash</option>
                       <option value="Bank Transfer" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Bank Transfer</option>
@@ -163,14 +163,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onSubmit, 
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Amount</label>
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Amount</label>
                     <input 
                       required 
                       type="number"
                       step="0.01"
                       value={p.amount} 
                       onChange={e => updatePayment(p.id, 'amount', e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-lg outline-none text-xs font-mono font-bold focus:ring-2 focus:ring-primary/20 transition-all" 
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white outline-none text-sm font-medium focus:border-slate-500" 
                     />
                   </div>
                 </div>
@@ -181,25 +181,30 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onSubmit, 
           <button 
             type="button" 
             onClick={addPayment}
-            className="w-full py-3 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest hover:border-primary/50 hover:text-primary transition-all flex items-center justify-center space-x-2"
+            className="w-full py-2.5 border border-dashed border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:border-primary hover:text-primary transition-colors flex items-center justify-center space-x-2 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>Create New Payment</span>
+            <span>Add Payment Entry</span>
           </button>
         </div>
 
-        <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex gap-3 shrink-0">
-          <button type="button" onClick={onClose} disabled={saving} className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-lg text-sm font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-            Cancel
+        <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-3 shrink-0">
+          <button 
+            type="button" 
+            onClick={onClose} 
+            disabled={saving} 
+            className="h-10 px-4 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors cursor-pointer disabled:opacity-50"
+          >
+            Discard
           </button>
           <button 
             type="button"
             onClick={handleSubmit}
             disabled={saving}
-            className="flex-1 px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary-dark shadow-lg active:scale-95 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            className="h-10 px-6 bg-primary hover:bg-primary-dark text-white text-sm font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-            Submit Payments
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            Save Payments
           </button>
         </div>
       </div>

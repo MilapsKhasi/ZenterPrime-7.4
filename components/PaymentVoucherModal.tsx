@@ -11,13 +11,19 @@ interface PaymentVoucherModalProps {
   onClose: () => void;
   initialType?: 'Receipt' | 'Payment';
   onSuccess?: () => void;
+  initialPartyName?: string;
+  initialBillId?: string;
+  initialAmount?: number | string;
 }
 
 export const PaymentVoucherModal: React.FC<PaymentVoucherModalProps> = ({
   isOpen,
   onClose,
   initialType = 'Receipt',
-  onSuccess
+  onSuccess,
+  initialPartyName,
+  initialBillId,
+  initialAmount
 }) => {
   const [voucherType, setVoucherType] = useState<'Receipt' | 'Payment'>(initialType);
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
@@ -43,20 +49,38 @@ export const PaymentVoucherModal: React.FC<PaymentVoucherModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setVoucherType(initialType);
-      const savedDraft = getDraft(`payment_voucher_${cid}_${initialType}`);
-      if (savedDraft) {
-        if (savedDraft.date) setDate(savedDraft.date);
-        if (savedDraft.account) setAccount(savedDraft.account);
-        if (savedDraft.partyName) setPartyName(savedDraft.partyName);
-        if (savedDraft.amount) setAmount(savedDraft.amount);
-        if (savedDraft.description) setDescription(savedDraft.description);
-        if (savedDraft.selectedBillIds) setSelectedBillIds(savedDraft.selectedBillIds);
-        setIsDraftRestored(true);
+      const todayStr = new Date().toISOString().split('T')[0];
+      setDate(todayStr);
+
+      if (initialPartyName) {
+        setAccount('Cash');
+        setPartyName(initialPartyName);
+        if (initialAmount !== undefined && initialAmount !== null && Number(initialAmount) > 0) {
+          setAmount(Number(initialAmount).toFixed(2));
+        } else {
+          setAmount('');
+        }
+        setDescription('');
+        setSelectedBillIds(initialBillId ? [initialBillId] : []);
+        setAlreadyPaidBillIds([]);
+        setPartyBills([]);
+        setIsDraftRestored(false);
       } else {
-        resetForm();
+        const savedDraft = getDraft(`payment_voucher_${cid}_${initialType}`);
+        if (savedDraft) {
+          if (savedDraft.date) setDate(savedDraft.date);
+          if (savedDraft.account) setAccount(savedDraft.account);
+          if (savedDraft.partyName) setPartyName(savedDraft.partyName);
+          if (savedDraft.amount) setAmount(savedDraft.amount);
+          if (savedDraft.description) setDescription(savedDraft.description);
+          if (savedDraft.selectedBillIds) setSelectedBillIds(savedDraft.selectedBillIds);
+          setIsDraftRestored(true);
+        } else {
+          resetForm();
+        }
       }
     }
-  }, [isOpen, initialType, cid]);
+  }, [isOpen, initialType, cid, initialPartyName, initialBillId, initialAmount]);
 
   // Auto-save draft
   useEffect(() => {
@@ -154,13 +178,25 @@ export const PaymentVoucherModal: React.FC<PaymentVoucherModalProps> = ({
         const pNameLower = partyName.trim().toLowerCase();
         const bills = (data || []).filter((item: any) => {
           const isVoucher = item.items && (item.items as any).is_payment_voucher === true;
-          const itemParty = (voucherType === 'Receipt' ? item.customer_name : item.vendor_name) || '';
+          const itemParty = (voucherType === 'Receipt' ? (item.customer_name || item.vendor_name) : (item.vendor_name || item.customer_name)) || '';
           const nameMatch = itemParty.trim().toLowerCase() === pNameLower;
-          return !isVoucher && nameMatch;
+          const isTargetBill = initialBillId && item.id === initialBillId;
+          return !isVoucher && (nameMatch || isTargetBill);
         });
 
         setPartyBills(bills);
-        setSelectedBillIds([]);
+        if (initialBillId && bills.some((b: any) => b.id === initialBillId)) {
+          setSelectedBillIds([initialBillId]);
+          const targetB = bills.find((b: any) => b.id === initialBillId);
+          if (targetB) {
+            const billAmt = initialAmount ? Number(initialAmount) : Number(targetB.grand_total || 0);
+            if (billAmt > 0) {
+              setAmount(billAmt.toFixed(2));
+            }
+          }
+        } else {
+          setSelectedBillIds([]);
+        }
       } catch (err) {
         console.error('Error fetching party bills:', err);
       } finally {
@@ -169,7 +205,7 @@ export const PaymentVoucherModal: React.FC<PaymentVoucherModalProps> = ({
     };
 
     fetchPartyBills();
-  }, [isOpen, partyName, voucherType]);
+  }, [isOpen, partyName, voucherType, initialBillId, initialAmount]);
 
   const handleBillToggle = (billId: string) => {
     setSelectedBillIds(prev => {
@@ -326,9 +362,9 @@ export const PaymentVoucherModal: React.FC<PaymentVoucherModalProps> = ({
       title={voucherType === 'Receipt' ? 'New Receive Payment Voucher' : 'New Pay Supplier Voucher'}
       maxWidth="max-w-5xl"
     >
-      <form onSubmit={handleSave} className="p-6 space-y-4">
+      <form onSubmit={handleSave} className="p-6 space-y-6">
         {isDraftRestored && (
-          <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg flex items-center justify-between text-xs text-amber-900 dark:text-amber-200 shadow-2xs">
+          <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex items-center justify-between text-xs text-amber-900 dark:text-amber-200">
             <span className="flex items-center gap-2 font-medium">
               <FileText className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
               <span>Restored unsaved draft from your previous session.</span>
@@ -336,35 +372,35 @@ export const PaymentVoucherModal: React.FC<PaymentVoucherModalProps> = ({
             <button
               type="button"
               onClick={handleDiscardDraft}
-              className="px-2.5 py-1 bg-amber-200/70 dark:bg-amber-900/60 hover:bg-amber-300 dark:hover:bg-amber-800 text-amber-950 dark:text-amber-100 font-semibold rounded transition-colors cursor-pointer"
+              className="px-2.5 py-1 bg-amber-200/70 dark:bg-amber-900/60 hover:bg-amber-300 dark:hover:bg-amber-800 text-amber-950 dark:text-amber-100 font-semibold transition-colors cursor-pointer"
             >
               Discard Draft
             </button>
           </div>
         )}
         <div>
-          <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-2">Voucher Type</label>
-          <div className="grid grid-cols-2 gap-2">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-2">Voucher Type</label>
+          <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
               onClick={() => { setVoucherType('Receipt'); setPartyName(''); }}
-              className={`py-2.5 rounded-lg border text-xs font-bold transition-all flex items-center justify-center ${voucherType === 'Receipt' ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-500 text-emerald-700 dark:text-emerald-400' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400'}`}
+              className={`h-10 border text-sm font-medium transition-colors flex items-center justify-center cursor-pointer ${voucherType === 'Receipt' ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-500 text-emerald-700 dark:text-emerald-400' : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50'}`}
             >
               <ArrowDownCircle className="w-4 h-4 mr-2" /> Receipt (Receive Money)
             </button>
             <button
               type="button"
               onClick={() => { setVoucherType('Payment'); setPartyName(''); }}
-              className={`py-2.5 rounded-lg border text-xs font-bold transition-all flex items-center justify-center ${voucherType === 'Payment' ? 'bg-rose-50 dark:bg-rose-950/20 border-rose-500 text-rose-700 dark:text-rose-400' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400'}`}
+              className={`h-10 border text-sm font-medium transition-colors flex items-center justify-center cursor-pointer ${voucherType === 'Payment' ? 'bg-rose-50 dark:bg-rose-950/20 border-rose-500 text-rose-700 dark:text-rose-400' : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50'}`}
             >
               <ArrowUpCircle className="w-4 h-4 mr-2" /> Payment (Pay Money)
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Date</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 block">Date</label>
             <div className="relative">
               <Calendar className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
               <input
@@ -372,13 +408,13 @@ export const PaymentVoucherModal: React.FC<PaymentVoucherModalProps> = ({
                 required
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-lg outline-none text-xs focus:ring-2 focus:ring-primary/20 transition-all"
+                className="w-full pl-9 pr-3 py-2 border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white outline-none text-sm focus:border-slate-500"
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Account (Bank / Cash)</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 block">Account (Bank / Cash)</label>
             <div className="relative">
               <CreditCard className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
               <input
@@ -387,7 +423,7 @@ export const PaymentVoucherModal: React.FC<PaymentVoucherModalProps> = ({
                 placeholder="e.g. Kotak Bank, SBI, Cash"
                 value={account}
                 onChange={(e) => setAccount(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-lg outline-none text-xs focus:ring-2 focus:ring-primary/20 transition-all"
+                className="w-full pl-9 pr-3 py-2 border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white outline-none text-sm focus:border-slate-500"
                 list="accounts-suggestions-modal"
               />
               <datalist id="accounts-suggestions-modal">
@@ -402,16 +438,16 @@ export const PaymentVoucherModal: React.FC<PaymentVoucherModalProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 block">
               {voucherType === 'Receipt' ? 'Customer Name (Party)' : 'Vendor Name (Party)'}
             </label>
             <select
               required
               value={partyName}
               onChange={(e) => setPartyName(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-lg outline-none text-xs focus:ring-2 focus:ring-primary/20 transition-all"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white outline-none text-sm focus:border-slate-500"
             >
               <option value="" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Select Party</option>
               {voucherType === 'Receipt' ? (
@@ -423,7 +459,7 @@ export const PaymentVoucherModal: React.FC<PaymentVoucherModalProps> = ({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Amount</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 block">Amount</label>
             <input
               type="number"
               step="0.01"
@@ -431,23 +467,23 @@ export const PaymentVoucherModal: React.FC<PaymentVoucherModalProps> = ({
               placeholder="0.00"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-lg outline-none text-xs focus:ring-2 focus:ring-primary/20 transition-all font-mono font-bold"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white outline-none text-sm font-medium focus:border-slate-500"
             />
           </div>
         </div>
 
         {partyName && (
-          <div className="border border-slate-100 dark:border-slate-800 rounded-lg p-3.5 bg-slate-50/50 dark:bg-slate-900/50 space-y-2.5">
+          <div className="border border-slate-200 dark:border-slate-800 p-4 bg-slate-50/50 dark:bg-slate-900/50 space-y-3">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1">
-              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">
                 {voucherType === 'Receipt' ? 'Pending Sales Invoices' : 'Pending Purchase Bills'}
               </span>
-              <div className="flex items-center space-x-2 text-[10px] font-bold">
-                <span className="text-slate-500 dark:text-slate-400">
-                  Outstanding: <span className="font-mono text-red-500 dark:text-red-400 font-bold">{formatCurrency(totalOutstanding)}</span>
+              <div className="flex items-center space-x-3 text-xs font-medium">
+                <span className="text-slate-600 dark:text-slate-400">
+                  Outstanding: <span className="text-red-600 dark:text-red-400 font-semibold">{formatCurrency(totalOutstanding)}</span>
                 </span>
                 {selectedBillIds.length > 0 && (
-                  <span className="bg-primary/10 text-primary px-2 py-0.5 rounded">
+                  <span className="bg-primary/10 text-primary px-2 py-0.5 text-xs font-medium border border-primary/20">
                     {selectedBillIds.length} Selected
                   </span>
                 )}
@@ -463,7 +499,7 @@ export const PaymentVoucherModal: React.FC<PaymentVoucherModalProps> = ({
                 No previous bills found for this party.
               </div>
             ) : (
-              <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1 divide-y divide-slate-100 dark:divide-slate-800">
+              <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1 divide-y divide-slate-100 dark:divide-slate-800">
                 {partyBills.map((b) => {
                   const hasDirectPayment = (Array.isArray(b.items?.payment_details) && b.items.payment_details.length > 0) ||
                                            (Array.isArray(b.payment_details) && b.payment_details.length > 0);
@@ -473,7 +509,7 @@ export const PaymentVoucherModal: React.FC<PaymentVoucherModalProps> = ({
                   return (
                     <label
                       key={b.id}
-                      className={`flex items-center justify-between py-2 px-2.5 rounded-md text-[11px] transition-colors ${
+                      className={`flex items-center justify-between py-2.5 px-3 text-xs transition-colors ${
                         isPaid
                           ? 'opacity-65 bg-slate-100/50 dark:bg-slate-800/20 cursor-not-allowed'
                           : isChecked
@@ -481,27 +517,27 @@ export const PaymentVoucherModal: React.FC<PaymentVoucherModalProps> = ({
                             : 'hover:bg-slate-100 dark:hover:bg-slate-800/50 cursor-pointer'
                       }`}
                     >
-                      <div className="flex items-center space-x-2.5">
+                      <div className="flex items-center space-x-3">
                         <input
                           type="checkbox"
                           checked={isChecked}
                           disabled={isPaid}
                           onChange={() => !isPaid && handleBillToggle(b.id)}
-                          className="w-3.5 h-3.5 rounded border-slate-300 text-primary focus:ring-primary dark:bg-slate-800 dark:border-slate-700 disabled:opacity-75 disabled:text-emerald-600"
+                          className="w-4 h-4 border-slate-300 text-primary dark:bg-slate-800 dark:border-slate-700 disabled:opacity-75"
                         />
                         <div className="flex flex-col">
-                          <div className="flex items-center space-x-1.5">
-                            <span className="font-semibold text-slate-900 dark:text-white font-mono">{billNo}</span>
+                          <div className="flex items-center space-x-2">
+                            <span className="font-semibold text-slate-900 dark:text-white">{billNo}</span>
                             {isPaid && (
-                              <span className="px-1.5 py-0.5 text-[8px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 rounded">
+                              <span className="px-1.5 py-0.5 text-[10px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200">
                                 Paid
                               </span>
                             )}
                           </div>
-                          <span className="text-[9px] text-slate-400">{formatDate(b.date)}</span>
+                          <span className="text-[11px] text-slate-500">{formatDate(b.date)}</span>
                         </div>
                       </div>
-                      <span className="font-bold font-mono text-slate-950 dark:text-white">
+                      <span className="font-semibold text-slate-950 dark:text-white">
                         {formatCurrency(Number(b.grand_total) || 0)}
                       </span>
                     </label>
@@ -513,7 +549,7 @@ export const PaymentVoucherModal: React.FC<PaymentVoucherModalProps> = ({
         )}
 
         <div className="space-y-1.5">
-          <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Narration / Description</label>
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300 block">Narration / Description</label>
           <div className="relative">
             <FileText className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
             <textarea
@@ -521,34 +557,36 @@ export const PaymentVoucherModal: React.FC<PaymentVoucherModalProps> = ({
               rows={2}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-lg outline-none text-xs focus:ring-2 focus:ring-primary/20 transition-all"
+              className="w-full pl-9 pr-3 py-2 border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white outline-none text-sm focus:border-slate-500 resize-none"
             />
           </div>
         </div>
 
-        <div className="flex justify-end space-x-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+        <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-200 dark:border-slate-800">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 rounded-lg text-xs hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+            className="h-10 px-4 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors cursor-pointer"
           >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            onClick={() => setIsSaveAndNew(true)}
-            disabled={saving}
-            className="px-4 py-2 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 text-xs flex items-center shadow-sm disabled:opacity-50"
-          >
-            {saving && isSaveAndNew && <Loader2 className="w-3 h-3 animate-spin mr-1.5" />} Save & New
+            Discard
           </button>
           <button
             type="submit"
             onClick={() => setIsSaveAndNew(false)}
             disabled={saving}
-            className="px-5 py-2 bg-primary text-white font-medium rounded-lg hover:bg-primary-dark text-xs flex items-center shadow-sm disabled:opacity-50"
+            className="h-10 px-6 bg-primary hover:bg-primary-dark text-white text-sm font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
           >
-            {saving && !isSaveAndNew && <Loader2 className="w-3 h-3 animate-spin mr-1.5" />} Save Entry
+            {saving && !isSaveAndNew && <Loader2 className="w-4 h-4 animate-spin mr-1.5" />}
+            Save
+          </button>
+          <button
+            type="submit"
+            onClick={() => setIsSaveAndNew(true)}
+            disabled={saving}
+            className="h-10 px-5 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+          >
+            {saving && isSaveAndNew && <Loader2 className="w-4 h-4 animate-spin mr-1.5" />}
+            Save & New
           </button>
         </div>
       </form>

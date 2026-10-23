@@ -587,7 +587,7 @@ const Auth = () => {
   const isSecurityScreen = authStep === 'zpin' || authStep === 'setup-pin' || authStep === 'verify-pin';
 
   return (
-    <div className="min-h-screen bg-[#F0F2F6] flex items-center justify-center p-4 sm:p-8 font-sans">
+    <div className="min-h-screen bg-[#F0F2F6] dark:bg-slate-950 flex items-center justify-center p-4 sm:p-8 font-sans transition-colors">
       {/* Outer Card with Exact Dimensions & Rounded Borders */}
       <div
         className={`w-full max-w-[1040px] rounded-[32px] p-5 sm:p-7 shadow-2xl transition-all duration-300 ${
@@ -681,7 +681,7 @@ const Auth = () => {
           </div>
 
           {/* Right Column (Inner White Card Form) */}
-          <div className="md:col-span-7 bg-white rounded-[24px] p-6 sm:p-10 flex flex-col justify-between shadow-sm min-h-[460px]">
+          <div className="md:col-span-7 bg-white dark:bg-slate-900 rounded-[24px] p-6 sm:p-10 flex flex-col justify-between shadow-sm min-h-[460px] transition-colors">
             {/* Top Switcher Tabs (Only visible in Login & Signup step) */}
             {!isSecurityScreen ? (
               <div>

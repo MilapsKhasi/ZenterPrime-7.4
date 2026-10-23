@@ -54,18 +54,17 @@
     <script>
       (function() {
         try {
-          var ed = localStorage.getItem('zenter_edition') || localStorage.getItem('zenter_license_type');
-          if (ed === 'professional') {
-            document.documentElement.style.setProperty('--color-primary', '#2563EB');
-            document.documentElement.style.setProperty('--color-primary-dark', '#1D4ED8');
-            document.documentElement.style.setProperty('--color-primary-light', '#DBEAFE');
-            document.documentElement.setAttribute('data-edition', 'professional');
+          var isDark = localStorage.getItem('app_theme') === 'dark';
+
+          if (isDark) {
+            document.documentElement.classList.add('dark');
           } else {
-            document.documentElement.style.setProperty('--color-primary', '#4338ca');
-            document.documentElement.style.setProperty('--color-primary-dark', '#3730a3');
-            document.documentElement.style.setProperty('--color-primary-light', '#e0e7ff');
-            document.documentElement.setAttribute('data-edition', 'standard');
+            document.documentElement.classList.remove('dark');
           }
+
+          document.documentElement.style.setProperty('--color-primary', '#4338CA');
+          document.documentElement.style.setProperty('--color-primary-dark', '#3730A3');
+          document.documentElement.style.setProperty('--color-primary-light', '#e0e7ff');
         } catch(e) {}
       })();
     </script>
@@ -121,15 +120,7 @@
       }
     </script>
 
-    <script>
-      // Initial theme setup to avoid FOUC
-      const theme = localStorage.getItem('app_theme') || 'light';
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-    </script>
+    <!-- Theme initialized above -->
 
     <style>
       body { 
