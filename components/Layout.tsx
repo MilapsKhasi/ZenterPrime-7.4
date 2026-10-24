@@ -415,11 +415,11 @@ const Layout = () => {
           {menuGroups.map((group, gIdx) => (
             <div key={gIdx} className="space-y-0.5">
               {(isSidebarOpen || isMobileMenuOpen) && group.groupName && (
-                <div className="pt-2.5 pb-1 px-3 flex items-center space-x-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                <div className="pt-2 pb-1 px-3 flex items-center space-x-2">
+                  <span className="text-[10px] font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 whitespace-nowrap">
                     {group.groupName}
                   </span>
-                  <span className="h-[1px] flex-1 bg-slate-200/80 dark:bg-slate-800" />
+                  <span className="h-[1px] flex-1 bg-slate-100 dark:bg-slate-800" />
                 </div>
               )}
               {(!isSidebarOpen && !isMobileMenuOpen) && group.groupName && gIdx > 0 && (
@@ -527,7 +527,7 @@ const Layout = () => {
               <div className="flex items-center space-x-2 text-white/90 min-w-0">
                 <Search className="w-3.5 h-3.5 text-white/90 shrink-0" />
                 <span className="font-normal text-white/90 text-[11.5px] truncate">
-                  Search invoices, bills, customers, items...
+                  Search vouchers, ledgers, items, parties...
                 </span>
               </div>
             </button>
@@ -626,30 +626,28 @@ const Layout = () => {
               title="Export Workspace Data (Excel, CSV, JSON)"
             >
               <Download className="w-3.5 h-3.5 text-white" />
-              <span className="hidden md:inline text-[11.5px]">Export Data</span>
+              <span className="hidden md:inline text-[11.5px]">Export</span>
             </button>
-            {location.pathname !== '/' && (
-              <button
-                disabled={isReadOnly}
-                onClick={() => {
-                  if (!isReadOnly) {
-                    verifyAction('Create Document', () => {
-                      setQuickCreateType(null);
-                      setIsCreateNewModalOpen(true);
-                    });
-                  }
-                }}
-                className={`px-2.5 sm:px-3 py-1.5 text-xs rounded-md capitalize flex items-center gap-1.5 shadow-xs transition-all ${
-                  isReadOnly
-                    ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 border border-slate-300 dark:border-slate-700 cursor-not-allowed'
-                    : 'bg-[#ffffff] text-[#000000] border border-white hover:bg-slate-100 cursor-pointer'
-                }`}
-                title={isReadOnly ? 'Evaluation Expired - Read Only Mode' : 'Quick Create'}
-              >
-                {isReadOnly ? <Lock className="w-3.5 h-3.5 text-slate-300" /> : <Plus className="w-3.5 h-3.5 text-[#000000] stroke-[2.5]" />}
-                <span className="hidden sm:inline text-[11.5px] bg-[#ffffff] text-[#000000] font-normal">Create</span>
-              </button>
-            )}
+            <button
+              disabled={isReadOnly}
+              onClick={() => {
+                if (!isReadOnly) {
+                  verifyAction('Create Document', () => {
+                    setQuickCreateType(null);
+                    setIsCreateNewModalOpen(true);
+                  });
+                }
+              }}
+              className={`px-2.5 sm:px-3 py-1.5 text-xs rounded-md capitalize flex items-center gap-1.5 shadow-xs transition-all ${
+                isReadOnly
+                  ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 border border-slate-300 dark:border-slate-700 cursor-not-allowed'
+                  : 'bg-[#ffffff] text-[#000000] border border-white hover:bg-slate-100 cursor-pointer'
+              }`}
+              title={isReadOnly ? 'Evaluation Expired - Read Only Mode' : 'Quick Create'}
+            >
+              {isReadOnly ? <Lock className="w-3.5 h-3.5 text-slate-300" /> : <Plus className="w-3.5 h-3.5 text-[#000000] stroke-[2.5]" />}
+              <span className="hidden sm:inline text-[11.5px] bg-[#ffffff] text-[#000000] font-normal">Create</span>
+            </button>
             <button
               onClick={toggleTheme}
               className="p-1.5 bg-[#4338ca] hover:bg-[#3b31b3] text-white rounded-md border border-indigo-400/30 transition-all cursor-pointer shadow-2xs"

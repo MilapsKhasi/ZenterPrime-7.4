@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Loader2, ShoppingCart, Package, Users, Receipt, ReceiptText, Clock, BadgeIndianRupee, LayoutDashboard, ShieldAlert, X, Menu, ArrowUp, ArrowDown, CheckCircle2 } from 'lucide-react';
+import { Search, Loader2, ShoppingCart, Package, Users, Receipt, Clock, BadgeIndianRupee, LayoutDashboard, ShieldAlert, X, Menu, ArrowUp, ArrowDown, CheckCircle2 } from 'lucide-react';
 import { getActiveCompanyId, formatDate, normalizeBill, formatCurrency } from '../utils/helpers';
 import DateFilter from '../components/DateFilter';
 import Modal from '../components/Modal';
@@ -9,7 +9,6 @@ import PaymentVoucherModal from '../components/PaymentVoucherModal';
 import NewVoucherDropdown from '../components/NewVoucherDropdown';
 import SalesPurchaseChart from '../components/SalesPurchaseChart';
 import PageHeader from '../components/PageHeader';
-import EmptyState from '../components/EmptyState';
 import { supabase } from '../lib/supabase';
 import { useLicense } from '../context/LicenseContext';
 import { useSecurityDemo } from '../context/SecurityDemoContext';
@@ -139,27 +138,16 @@ const Dashboard = () => {
     return v.bill_number?.toLowerCase().includes(search) || partyName.toLowerCase().includes(search);
   }).slice(0, 10);
 
-  const StatBox = ({ label, value, subLabel, icon: Icon }: any) => {
-    let subColor = 'text-slate-600 dark:text-slate-300 font-medium';
-    if (typeof subLabel === 'string') {
-      if (subLabel.includes('Net Recv')) {
-        subColor = 'text-emerald-600 dark:text-emerald-400 font-semibold';
-      } else if (subLabel.includes('Net Payable')) {
-        subColor = 'text-amber-600 dark:text-amber-400 font-semibold';
-      }
-    }
-
-    return (
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl hover:border-slate-300 dark:hover:border-slate-700 transition-colors shadow-2xs">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 capitalize tracking-tight">{label}</span>
-          <Icon className="w-4 h-4 text-slate-400 dark:text-slate-500" />
-        </div>
-        <div className="text-lg font-bold text-slate-900 dark:text-white leading-tight mb-1.5 tracking-tight">{value}</div>
-        {subLabel && <div className={`text-xs ${subColor} tracking-tight`}>{subLabel}</div>}
+  const StatBox = ({ label, value, subLabel, icon: Icon }: any) => (
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded hover:border-slate-300 dark:hover:border-slate-700">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 capitalize tracking-tight">{label}</span>
+        <Icon className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600" />
       </div>
-    );
-  };
+      <div className="text-xl font-medium text-slate-900 dark:text-white leading-none mb-1">{value}</div>
+      {subLabel && <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium capitalize">{subLabel}</div>}
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -270,78 +258,72 @@ const Dashboard = () => {
           </div>
         </div>
         
-        {loading ? (
-          <div className="text-center py-24 text-slate-400 capitalize text-xs font-medium">Refreshing Data...</div>
-        ) : filteredVouchers.length === 0 ? (
-          <EmptyState
-            title="No transactions found!"
-            subtitle="Start creating your first or selected filter's first transaction."
-            actionLabel="Create New"
-            onAction={isReadOnly ? undefined : () => verifyAction('Create Document', () => setIsSalesModalOpen(true))}
-          />
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[800px]">
-              <thead>
-                <tr className="bg-[#F8FAFC] dark:bg-slate-800/60 border-b border-slate-200/80 dark:border-slate-800 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  <th className="py-3.5 px-6">Date</th>
-                  <th className="py-3.5 px-6">Type</th>
-                  <th className="py-3.5 px-6">Document #</th>
-                  <th className="py-3.5 px-6">Party Name</th>
-                  <th className="py-3.5 px-6 text-right">Total Amount</th>
-                  <th className="py-3.5 px-6 text-center">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
-                {filteredVouchers.map((v) => {
-                  const isPaid = v.status === 'Paid';
-                  const isSale = v.type === 'Sale';
-                  const amt = Number(v.grand_total || 0);
-                  const wholeStr = Math.floor(amt).toLocaleString('en-IN');
-                  const decimalStr = (amt % 1).toFixed(2).substring(1);
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[800px]">
+            <thead>
+              <tr className="bg-[#F8FAFC] dark:bg-slate-800/60 border-b border-slate-200/80 dark:border-slate-800 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                <th className="py-3.5 px-6">Date</th>
+                <th className="py-3.5 px-6">Type</th>
+                <th className="py-3.5 px-6">Document #</th>
+                <th className="py-3.5 px-6">Party Name</th>
+                <th className="py-3.5 px-6 text-right">Total Amount</th>
+                <th className="py-3.5 px-6 text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+              {loading ? (
+                <tr><td colSpan={6} className="text-center py-20 text-slate-400 capitalize text-xs font-medium">Refreshing Data...</td></tr>
+              ) : filteredVouchers.map((v) => {
+                const isPaid = v.status === 'Paid';
+                const isSale = v.type === 'Sale';
+                const amt = Number(v.grand_total || 0);
+                const wholeStr = Math.floor(amt).toLocaleString('en-IN');
+                const decimalStr = (amt % 1).toFixed(2).substring(1);
 
-                  return (
-                    <tr key={v.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
-                      <td className="py-4 px-6 text-sm text-slate-700 dark:text-slate-300 whitespace-nowrap">{formatDate(v.date)}</td>
-                      <td className="py-4 px-6 whitespace-nowrap">
-                        {isSale ? (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 text-xs font-semibold">
-                            <ArrowUp className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 stroke-[2.5]" />
-                            Sale
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-xs font-semibold">
-                            <ArrowDown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 stroke-[2.5]" />
-                            Purchase
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-4 px-6 text-sm text-slate-700 dark:text-slate-300 whitespace-nowrap font-normal font-mono">{v.bill_number}</td>
-                      <td className="py-4 px-6 text-sm font-bold text-slate-900 dark:text-white capitalize whitespace-nowrap">{v.vendor_name || v.customer_name}</td>
-                      <td className="py-4 px-6 text-right whitespace-nowrap font-mono tabular-nums">
-                        <span className="font-bold text-slate-900 dark:text-white text-base">₹{wholeStr}</span>
-                        <span className="text-slate-500 dark:text-slate-400 text-xs font-medium">{decimalStr}</span>
-                      </td>
-                      <td className="py-4 px-6 text-center whitespace-nowrap">
-                        {isPaid ? (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-xs font-semibold border border-emerald-200/60 dark:border-emerald-900/40">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                            Paid
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 text-xs font-semibold border border-amber-200/60 dark:border-amber-900/40">
-                            <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                            Pending
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+                return (
+                  <tr key={v.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                    <td className="py-4 px-6 text-sm text-slate-700 dark:text-slate-300 whitespace-nowrap">{formatDate(v.date)}</td>
+                    <td className="py-4 px-6 whitespace-nowrap">
+                      {isSale ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 text-xs font-semibold">
+                          <ArrowUp className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 stroke-[2.5]" />
+                          Sale
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-xs font-semibold">
+                          <ArrowDown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 stroke-[2.5]" />
+                          Purchase
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-4 px-6 text-sm text-slate-700 dark:text-slate-300 whitespace-nowrap font-normal font-mono">{v.bill_number}</td>
+                    <td className="py-4 px-6 text-sm font-bold text-slate-900 dark:text-white capitalize whitespace-nowrap">{v.vendor_name || v.customer_name}</td>
+                    <td className="py-4 px-6 text-right whitespace-nowrap font-mono tabular-nums">
+                      <span className="font-bold text-slate-900 dark:text-white text-base">₹{wholeStr}</span>
+                      <span className="text-slate-500 dark:text-slate-400 text-xs font-medium">{decimalStr}</span>
+                    </td>
+                    <td className="py-4 px-6 text-center whitespace-nowrap">
+                      {isPaid ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-xs font-semibold border border-emerald-200/60 dark:border-emerald-900/40">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          Paid
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 text-xs font-semibold border border-amber-200/60 dark:border-amber-900/40">
+                          <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                          Pending
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+              {!loading && filteredVouchers.length === 0 && (
+                <tr><td colSpan={6} className="py-20 text-center text-slate-400 italic text-sm">No transactions found for the selected period.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

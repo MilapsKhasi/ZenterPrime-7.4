@@ -342,7 +342,7 @@ export const SalesPurchaseChart: React.FC<SalesPurchaseChartProps> = ({
 
   // Grid and Axis styling based on theme
   const gridStroke = isDark ? '#1e293b' : '#f1f5f9';
-  const axisTickColor = isDark ? '#cbd5e1' : '#475569';
+  const axisTickColor = isDark ? '#64748b' : '#94a3b8';
 
   return (
     <div className="rounded-[4px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs overflow-hidden p-5 sm:p-7 relative select-none" style={{ borderRadius: '4px' }}>
@@ -423,12 +423,12 @@ export const SalesPurchaseChart: React.FC<SalesPurchaseChartProps> = ({
             })}
           </div>
 
-          {/* Export Button - Scoped strictly to Revenue Overview chart */}
+          {/* Export Button */}
           <button
             type="button"
             onClick={handleExport}
             className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200 transition-colors cursor-pointer shadow-xs"
-            title="Export Revenue Overview chart data as CSV"
+            title="Export chart data as CSV"
           >
             {exported ? (
               <>
@@ -438,7 +438,7 @@ export const SalesPurchaseChart: React.FC<SalesPurchaseChartProps> = ({
             ) : (
               <>
                 <Upload className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                <span>Export Chart</span>
+                <span>Export</span>
               </>
             )}
           </button>
@@ -514,14 +514,14 @@ export const SalesPurchaseChart: React.FC<SalesPurchaseChartProps> = ({
                 dataKey="label"
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: axisTickColor, fontSize: 12, fontWeight: 600 }}
+                tick={{ fill: axisTickColor, fontSize: 12, fontWeight: 500 }}
                 dy={10}
               />
 
               <YAxis
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: axisTickColor, fontSize: 12, fontWeight: 600 }}
+                tick={{ fill: axisTickColor, fontSize: 11, fontWeight: 500 }}
                 tickFormatter={formatCompact}
                 dx={-5}
               />
@@ -580,33 +580,30 @@ export const SalesPurchaseChart: React.FC<SalesPurchaseChartProps> = ({
 
       {/* Floating Centered Stats Capsule Pill */}
       <div className="flex justify-center mt-3 pt-2">
-        <div className="inline-flex items-center gap-4 sm:gap-7 px-5 sm:px-8 py-2.5 rounded-full bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 text-xs shadow-xs">
+        <div className="inline-flex items-center gap-4 sm:gap-7 px-5 sm:px-8 py-2.5 rounded-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-xs shadow-xs">
           {/* Total */}
           <div className="flex items-center space-x-2">
-            <span className="text-slate-600 dark:text-slate-300 font-semibold text-xs">Total</span>
-            <span className="font-bold text-slate-900 dark:text-white tracking-tight text-sm sm:text-base">
+            <span className="text-slate-500 dark:text-slate-400 font-medium">Total</span>
+            <span className="font-bold text-slate-900 dark:text-white tracking-tight text-sm">
               {formatCompact(activeTotal)}
             </span>
           </div>
 
           <div className="w-[1px] h-3.5 bg-slate-200 dark:bg-slate-700"></div>
 
-          {/* Growth with explanatory comparison tooltip */}
-          <div 
-            className="flex items-center space-x-1.5 cursor-help"
-            title={`Compared to previous ${timeRange === 'All' ? 'historical' : timeRange} period average`}
-          >
-            <span className="text-slate-600 dark:text-slate-300 font-semibold text-xs">Growth</span>
+          {/* Growth */}
+          <div className="flex items-center space-x-1.5">
+            <span className="text-slate-500 dark:text-slate-400 font-medium">Growth</span>
             <span
-              className={`font-bold text-xs sm:text-sm flex items-center ${
+              className={`font-semibold text-xs flex items-center ${
                 isGrowthPos ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
               }`}
             >
               {isGrowthPos ? '+' : ''}{growthRate}%
               {isGrowthPos ? (
-                <ArrowUp className="w-3.5 h-3.5 ml-0.5 stroke-[2.5]" />
+                <ArrowUp className="w-3.5 h-3.5 ml-0.5" />
               ) : (
-                <ArrowDown className="w-3.5 h-3.5 ml-0.5 stroke-[2.5]" />
+                <ArrowDown className="w-3.5 h-3.5 ml-0.5" />
               )}
             </span>
           </div>
@@ -615,8 +612,8 @@ export const SalesPurchaseChart: React.FC<SalesPurchaseChartProps> = ({
 
           {/* Average */}
           <div className="flex items-center space-x-2">
-            <span className="text-slate-600 dark:text-slate-300 font-semibold text-xs">Avg</span>
-            <span className="font-bold text-slate-900 dark:text-white tracking-tight text-sm sm:text-base">
+            <span className="text-slate-500 dark:text-slate-400 font-medium">Avg</span>
+            <span className="font-bold text-slate-900 dark:text-white tracking-tight text-sm">
               {formatCompact(avgValue)}
             </span>
           </div>
