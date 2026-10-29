@@ -415,11 +415,11 @@ const Layout = () => {
           {menuGroups.map((group, gIdx) => (
             <div key={gIdx} className="space-y-0.5">
               {(isSidebarOpen || isMobileMenuOpen) && group.groupName && (
-                <div className="pt-2 pb-1 px-3 flex items-center space-x-2">
-                  <span className="text-[10px] font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                <div className="pt-2.5 pb-1 px-3 flex items-center space-x-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 whitespace-nowrap">
                     {group.groupName}
                   </span>
-                  <span className="h-[1px] flex-1 bg-slate-100 dark:bg-slate-800" />
+                  <span className="h-[1px] flex-1 bg-slate-200/80 dark:bg-slate-800" />
                 </div>
               )}
               {(!isSidebarOpen && !isMobileMenuOpen) && group.groupName && gIdx > 0 && (
@@ -521,13 +521,13 @@ const Layout = () => {
             {/* Long search button covering 60% of topbar from left margin */}
             <button
               onClick={() => setIsGlobalSearchOpen(true)}
-              className="w-full flex items-center justify-between px-3 h-[32px] bg-[#3b31b3]/70 hover:bg-[#372ea3] text-white rounded-md text-xs transition-all border border-indigo-400/30 cursor-pointer shadow-2xs group"
+              className="w-full flex items-center justify-between px-3 h-[35px] bg-[#3b31b3]/70 hover:bg-[#372ea3] text-white rounded-md text-xs transition-all border border-indigo-400/30 cursor-pointer shadow-2xs group"
               title="Global Search (Ctrl + K)"
             >
               <div className="flex items-center space-x-2 text-white/90 min-w-0">
                 <Search className="w-3.5 h-3.5 text-white/90 shrink-0" />
                 <span className="font-normal text-white/90 text-[11.5px] truncate">
-                  Search vouchers, ledgers, items, parties...
+                  Search invoices, bills, customers, items...
                 </span>
               </div>
             </button>
@@ -548,7 +548,7 @@ const Layout = () => {
             <div className="relative">
               <button
                 onClick={() => setShowWorkspaceMenu(!showWorkspaceMenu)}
-                className="flex items-center px-2.5 sm:px-3 py-1.5 h-[32px] bg-[#4338ca] border border-indigo-400/30 rounded text-sm hover:bg-[#3b31b3] transition-colors cursor-pointer"
+                className="flex items-center px-2.5 sm:px-3 py-1.5 h-[35px] bg-[#4338ca] border border-indigo-400/30 rounded text-sm hover:bg-[#3b31b3] transition-colors cursor-pointer"
               >
                 <Building2 className="w-3.5 h-3.5 text-white mr-1.5 shrink-0" />
                 <span className="font-medium text-white capitalize text-[11px] max-w-[85px] xs:max-w-[110px] sm:max-w-[150px] truncate">
@@ -622,11 +622,11 @@ const Layout = () => {
             </button>
             <button
               onClick={() => setIsExportDataOpen(true)}
-              className="px-2.5 sm:px-3 py-1.5 font-medium text-xs rounded-md capitalize flex items-center gap-1.5 shadow-xs transition-all bg-[#4338ca] text-white border border-indigo-400/30 hover:bg-[#3b31b3] cursor-pointer"
+              className="px-2.5 sm:px-3 py-1.5 font-medium text-xs rounded-md capitalize flex items-center gap-1.5 shadow-xs transition-all bg-[#4338ca] text-white border border-indigo-400/30 hover:bg-[#3b31b3] cursor-pointer h-[35px]"
               title="Export Workspace Data (Excel, CSV, JSON)"
             >
               <Download className="w-3.5 h-3.5 text-white" />
-              <span className="hidden md:inline text-[11.5px]">Export</span>
+              <span className="hidden md:inline text-[11.5px]">Export Data</span>
             </button>
             <button
               disabled={isReadOnly}
@@ -638,19 +638,19 @@ const Layout = () => {
                   });
                 }
               }}
-              className={`px-2.5 sm:px-3 py-1.5 text-xs rounded-md capitalize flex items-center gap-1.5 shadow-xs transition-all ${
+              className={`rounded-md transition-all shadow-xs flex items-center justify-center h-[32px] w-[32px] ${
                 isReadOnly
-                  ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 border border-slate-300 dark:border-slate-700 cursor-not-allowed'
-                  : 'bg-[#ffffff] text-[#000000] border border-white hover:bg-slate-100 cursor-pointer'
+                  ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
+                  : 'bg-white text-slate-900 hover:bg-slate-100 border border-white cursor-pointer'
               }`}
               title={isReadOnly ? 'Evaluation Expired - Read Only Mode' : 'Quick Create'}
+              aria-label="Quick Create"
             >
-              {isReadOnly ? <Lock className="w-3.5 h-3.5 text-slate-300" /> : <Plus className="w-3.5 h-3.5 text-[#000000] stroke-[2.5]" />}
-              <span className="hidden sm:inline text-[11.5px] bg-[#ffffff] text-[#000000] font-normal">Create</span>
+              {isReadOnly ? <Lock className="w-4 h-4 text-slate-400" /> : <Plus className="w-4 h-4 text-slate-900 stroke-[2.5]" />}
             </button>
             <button
               onClick={toggleTheme}
-              className="p-1.5 bg-[#4338ca] hover:bg-[#3b31b3] text-white rounded-md border border-indigo-400/30 transition-all cursor-pointer shadow-2xs"
+              className="h-[32px] w-[32px] p-1.5 bg-[#4338ca] hover:bg-[#3b31b3] text-white rounded-md border border-indigo-400/30 transition-all cursor-pointer shadow-2xs flex items-center justify-center"
               title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
               aria-label="Toggle Theme"
             >
@@ -658,7 +658,7 @@ const Layout = () => {
             </button>
             <button
               onClick={() => setIsSettingsModalOpen(true)}
-              className="p-1.5 bg-[#4338ca] hover:bg-[#3b31b3] text-white rounded-md border border-indigo-400/30 transition-all cursor-pointer shadow-2xs"
+              className="h-[32px] w-[32px] p-1.5 bg-[#4338ca] hover:bg-[#3b31b3] text-white rounded-md border border-indigo-400/30 transition-all cursor-pointer shadow-2xs flex items-center justify-center"
               title="Workspace Settings"
               aria-label="Workspace Settings"
             >

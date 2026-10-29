@@ -702,54 +702,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
             <div className="space-y-6">
               <div className="pb-4 border-b border-slate-100 dark:border-slate-800">
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white">Theme & Display Mode</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Choose between light and dark display modes for the application.</p>
-              </div>
-
-              {/* Mode Selection Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* 1. Light Mode Card */}
-                <button
-                  type="button"
-                  onClick={() => setDarkMode(false)}
-                  className={`p-5 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
-                    !isDarkMode
-                      ? 'border-primary bg-primary/5 dark:bg-primary/10 ring-2 ring-primary/20'
-                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-10 h-10 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
-                      <Sun className="w-5 h-5" />
-                    </div>
-                    {!isDarkMode && <CheckCircle2 className="w-5 h-5 text-primary" />}
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">Light Mode</h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Clean, high-visibility bright theme optimized for daytime accounting and billing.</p>
-                  </div>
-                </button>
-
-                {/* 2. Dark Mode Card */}
-                <button
-                  type="button"
-                  onClick={() => setDarkMode(true)}
-                  className={`p-5 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
-                    isDarkMode
-                      ? 'border-primary bg-primary/5 dark:bg-primary/10 ring-2 ring-primary/20'
-                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-10 h-10 rounded-lg bg-slate-800 text-amber-300 flex items-center justify-center">
-                      <Moon className="w-5 h-5" />
-                    </div>
-                    {isDarkMode && <CheckCircle2 className="w-5 h-5 text-primary" />}
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">Dark Mode</h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Deep, comfortable dark theme designed to reduce eye strain in low-light environments.</p>
-                  </div>
-                </button>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Toggle between light and dark display modes for the application.</p>
               </div>
 
               {/* Direct Toggle Row */}

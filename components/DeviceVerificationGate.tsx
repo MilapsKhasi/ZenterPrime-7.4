@@ -186,7 +186,16 @@ export const DeviceVerificationGate: React.FC<{ children: React.ReactNode }> = (
     return <Navigate to="/login" replace />;
   }
 
-  // 2. Initial State: Checking device credentials
+  const ONE_HOUR = 60 * 60 * 1000;
+  const isRecentlyVerified = lastVerified !== null && (Date.now() - lastVerified < ONE_HOUR);
+
+  // 2. Verified session: Grant Access to children directly.
+  // Children and active forms remain continuously mounted across tab switches and reactivations.
+  if (isDeviceVerified || (isRecentlyVerified && !requiresVerification && !requiresEnrollment)) {
+    return <>{children}</>;
+  }
+
+  // 3. Initial State: Checking device credentials for unverified session
   if (isCheckingDevice) {
     return (
       <div className="min-h-screen bg-[#F0F2F6] dark:bg-slate-950 flex items-center justify-center p-4 font-sans transition-colors">
@@ -203,14 +212,6 @@ export const DeviceVerificationGate: React.FC<{ children: React.ReactNode }> = (
         </div>
       </div>
     );
-  }
-
-  const ONE_HOUR = 60 * 60 * 1000;
-  const isRecentlyVerified = lastVerified !== null && (Date.now() - lastVerified < ONE_HOUR);
-
-  // 2. Verified or within 1-hour window: Grant Access to children
-  if (isDeviceVerified || isRecentlyVerified) {
-    return <>{children}</>;
   }
 
   // 3. Enrollment Mode (Setting up 4-Digit Z-PIN)

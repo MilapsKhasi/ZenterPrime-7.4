@@ -303,7 +303,7 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ isOpen, onClose }
             type="text"
             value={query}
             onChange={handleQueryChange}
-            placeholder="Search sales invoices, purchase bills, parties, payments, stock..."
+            placeholder="Search invoices, bills, customers, items..."
             className="w-full bg-transparent text-slate-900 dark:text-white placeholder-slate-400 outline-none text-sm font-medium"
           />
           {query && (

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, FileText, ShoppingCart, ArrowDownCircle, ArrowUpCircle, Lock } from 'lucide-react';
+import { ChevronDown, FileText, ShoppingCart, ArrowDownCircle, ArrowUpCircle, Lock, Plus } from 'lucide-react';
 import { useLicense } from '../context/LicenseContext';
 
 interface NewVoucherDropdownProps {
@@ -47,15 +47,16 @@ export const NewVoucherDropdown: React.FC<NewVoucherDropdownProps> = ({
         type="button"
         disabled={isReadOnly}
         onClick={() => { if (!isReadOnly) setIsOpen(!isOpen); }}
-        title={isReadOnly ? 'Evaluation Expired - Read Only Mode' : 'New Voucher'}
-        className={`px-4 py-2 font-medium text-xs rounded capitalize flex items-center justify-between gap-1.5 shadow-sm transition-none ${
+        title={isReadOnly ? 'Evaluation Expired - Read Only Mode' : 'New Transaction'}
+        style={{ height: '40px' }}
+        className={`px-3.5 font-medium text-xs rounded capitalize flex items-center justify-between gap-1.5 shadow-sm transition-none h-10 ${
           isReadOnly
             ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-300 dark:border-slate-700'
             : 'bg-[#4338ca] text-white hover:bg-[#3730a3] cursor-pointer'
         }`}
       >
-        {isReadOnly && <Lock className="w-3.5 h-3.5" />}
-        <span>New Voucher</span>
+        {isReadOnly ? <Lock className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5 stroke-[2.5]" />}
+        <span>New Transaction</span>
         <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-150 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 

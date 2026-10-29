@@ -39,76 +39,106 @@ export const DeviceVerificationProvider: React.FC<{ children: ReactNode }> = ({ 
     return null;
   });
 
-  const checkStatus = useCallback(async () => {
-    // If running in offline local mode, bypass cloud device check
-    if (typeof window !== 'undefined' && localStorage.getItem('use_offline_mode') === 'true') {
-      setIsDeviceVerified(true);
-      setDeviceVerifiedSession(true);
-      const now = Date.now();
-      setLastVerified(now);
-      localStorage.setItem('device_last_verified', String(now));
-      setIsCheckingDevice(false);
-      return;
+  const isDeviceVerifiedRef = React.useRef(isDeviceVerified);
+  isDeviceVerifiedRef.current = isDeviceVerified;
+
+  const verifiedUserIdRef = React.useRef<string | null>(null);
+  const inFlightCheckRef = React.useRef<Promise<void> | null>(null);
+
+  const checkStatus = useCallback(async (force = false) => {
+    // Prevent duplicate or concurrent verification requests
+    if (inFlightCheckRef.current) {
+      return inFlightCheckRef.current;
     }
 
-    try {
-      const { data } = await supabase.auth.getSession();
-      const user = data?.session?.user;
-
-      if (!user) {
-        setIsCheckingDevice(false);
-        setIsDeviceVerified(false);
-        setDeviceVerifiedSession(false);
-        setCurrentUserId(null);
-        return;
-      }
-
-      setCurrentUserId(user.id);
-      setIsCheckingDevice(true);
-
-      const result = await checkDeviceAuthorization(user.id);
-
-      if (result.rateLimit) {
-        setRateLimit(result.rateLimit);
-      }
-
-      setIsPinEnrolled(result.pinEnrolled);
-
-      if (result.deviceVerified) {
+    const checkPromise = (async () => {
+      // If running in offline local mode, bypass cloud device check
+      if (typeof window !== 'undefined' && localStorage.getItem('use_offline_mode') === 'true') {
         setIsDeviceVerified(true);
         setDeviceVerifiedSession(true);
         const now = Date.now();
         setLastVerified(now);
         localStorage.setItem('device_last_verified', String(now));
-        // Trigger safe workspace sync only now that device is verified
-        syncUserWorkspaceDataToIndexedDB(user.id).catch(() => {});
-      } else {
+        setIsCheckingDevice(false);
+        return;
+      }
+
+      try {
+        const { data } = await supabase.auth.getSession();
+        const user = data?.session?.user;
+
+        if (!user) {
+          verifiedUserIdRef.current = null;
+          setIsCheckingDevice(false);
+          setIsDeviceVerified(false);
+          setDeviceVerifiedSession(false);
+          setCurrentUserId(null);
+          return;
+        }
+
+        // Reuse verified state for ordinary tab switches / visibility re-checks within the same authenticated session
+        if (!force && isDeviceVerifiedRef.current && verifiedUserIdRef.current === user.id) {
+          setIsCheckingDevice(false);
+          return;
+        }
+
+        setCurrentUserId(user.id);
+
+        // Only show loading screen if the session is not yet verified
+        if (!isDeviceVerifiedRef.current) {
+          setIsCheckingDevice(true);
+        }
+
+        const result = await checkDeviceAuthorization(user.id);
+
+        if (result.rateLimit) {
+          setRateLimit(result.rateLimit);
+        }
+
+        setIsPinEnrolled(result.pinEnrolled);
+
+        if (result.deviceVerified) {
+          verifiedUserIdRef.current = user.id;
+          setIsDeviceVerified(true);
+          setDeviceVerifiedSession(true);
+          const now = Date.now();
+          setLastVerified(now);
+          localStorage.setItem('device_last_verified', String(now));
+          // Trigger safe workspace sync only now that device is verified
+          syncUserWorkspaceDataToIndexedDB(user.id).catch(() => {});
+        } else {
+          verifiedUserIdRef.current = null;
+          setIsDeviceVerified(false);
+          setDeviceVerifiedSession(false);
+          setLastVerified(null);
+          localStorage.removeItem('device_last_verified');
+        }
+      } catch (err) {
+        console.error('[DeviceContext] Check status error:', err);
+        verifiedUserIdRef.current = null;
         setIsDeviceVerified(false);
         setDeviceVerifiedSession(false);
+        setLastVerified(null);
+        localStorage.removeItem('device_last_verified');
+      } finally {
+        setIsCheckingDevice(false);
+        inFlightCheckRef.current = null;
       }
-    } catch (err) {
-      console.error('[DeviceContext] Check status error:', err);
-      setIsDeviceVerified(false);
-      setDeviceVerifiedSession(false);
-    } finally {
-      setIsCheckingDevice(false);
-    }
+    })();
+
+    inFlightCheckRef.current = checkPromise;
+    return checkPromise;
   }, []);
 
-  const isDeviceVerifiedRef = React.useRef(isDeviceVerified);
-  isDeviceVerifiedRef.current = isDeviceVerified;
-
   useEffect(() => {
-    checkStatus();
+    // Initial verification when application loads
+    checkStatus(true);
 
     const { data: authListener } = supabase.auth.onAuthStateChange((event: any, session: any) => {
-      if (event === 'SIGNED_IN') {
-        checkStatus();
-      } else if (event === 'TOKEN_REFRESHED') {
-        if (!isDeviceVerifiedRef.current) {
-          checkStatus();
-        }
-      } else if (event === 'SIGNED_OUT') {
+      const sessionUserId = session?.user?.id || null;
+
+      if (event === 'SIGNED_OUT' || !session?.user) {
+        verifiedUserIdRef.current = null;
         setIsDeviceVerified(false);
         setDeviceVerifiedSession(false);
         setLastVerified(null);
@@ -116,6 +146,22 @@ export const DeviceVerificationProvider: React.FC<{ children: ReactNode }> = ({ 
         setIsCheckingDevice(false);
         setCurrentUserId(null);
         setRateLimit(null);
+        return;
+      }
+
+      if (event === 'SIGNED_IN') {
+        // Only run device verification if the authenticated user has actually changed,
+        // or if the session is not yet verified. Ordinary tab switches / tab reactivations
+        // that re-emit SIGNED_IN for the existing verified user will reuse the verified state.
+        const isSameUser = Boolean(verifiedUserIdRef.current && sessionUserId && verifiedUserIdRef.current === sessionUserId);
+        if (!isDeviceVerifiedRef.current || !isSameUser) {
+          checkStatus(true);
+        }
+      } else if (event === 'TOKEN_REFRESHED') {
+        const isSameUser = Boolean(verifiedUserIdRef.current && sessionUserId && verifiedUserIdRef.current === sessionUserId);
+        if (!isDeviceVerifiedRef.current || !isSameUser) {
+          checkStatus(false);
+        }
       }
     });
 
@@ -134,6 +180,7 @@ export const DeviceVerificationProvider: React.FC<{ children: ReactNode }> = ({ 
       setLastVerified(now);
       localStorage.setItem('device_last_verified', String(now));
       if (currentUserId) {
+        verifiedUserIdRef.current = currentUserId;
         syncUserWorkspaceDataToIndexedDB(currentUserId).catch(() => {});
       }
       return { success: true };
@@ -169,6 +216,7 @@ export const DeviceVerificationProvider: React.FC<{ children: ReactNode }> = ({ 
       setLastVerified(now);
       localStorage.setItem('device_last_verified', String(now));
       if (currentUserId) {
+        verifiedUserIdRef.current = currentUserId;
         syncUserWorkspaceDataToIndexedDB(currentUserId).catch(() => {});
       }
       return { success: true };
@@ -178,6 +226,7 @@ export const DeviceVerificationProvider: React.FC<{ children: ReactNode }> = ({ 
   };
 
   const resetDeviceSession = () => {
+    verifiedUserIdRef.current = null;
     setIsDeviceVerified(false);
     setDeviceVerifiedSession(false);
     setLastVerified(null);

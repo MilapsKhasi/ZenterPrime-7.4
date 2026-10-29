@@ -93,7 +93,8 @@ const DateFilter = forwardRef<DateFilterHandle, DateFilterProps>(({ onFilterChan
           ref={yearRef}
           value={selectedYear}
           onChange={(e) => setSelectedYear(e.target.value)}
-          className="appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md py-2 pl-4 pr-10 text-xs font-normal text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer outline-none min-w-[110px] focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+          style={{ height: '40px' }}
+          className="appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md pl-4 pr-10 text-xs font-normal text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer outline-none min-w-[110px] focus:border-primary focus:ring-1 focus:ring-primary transition-colors h-10"
         >
           {years.map((opt: string) => <option key={opt} value={opt} className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200">{opt}</option>)}
         </select>
@@ -105,7 +106,8 @@ const DateFilter = forwardRef<DateFilterHandle, DateFilterProps>(({ onFilterChan
           ref={monthRef}
           value={selectedMonth}
           onChange={(e) => setSelectedMonth(e.target.value)}
-          className="appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md py-2 pl-4 pr-10 text-xs font-normal text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer outline-none min-w-[110px] focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+          style={{ height: '40px' }}
+          className="appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md pl-4 pr-10 text-xs font-normal text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer outline-none min-w-[110px] focus:border-primary focus:ring-1 focus:ring-primary transition-colors h-10"
         >
           {months.map((opt: string) => <option key={opt} value={opt} className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200">{opt}</option>)}
         </select>
