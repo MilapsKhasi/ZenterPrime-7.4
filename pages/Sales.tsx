@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Search, Loader2, Edit, Trash2, Plus, Printer, FileText, Lock, ArrowDownCircle } from 'lucide-react';
-import { formatDate, formatCurrency, getActiveCompanyId, normalizeBill, unsyncTransactionFromCashbook } from '../utils/helpers';
+import { formatDate, formatCurrency, getActiveCompanyId, normalizeBill, unsyncTransactionFromCashbook, syncInvoiceItemsToItemsTable } from '../utils/helpers';
 import Modal from '../components/Modal';
 import SalesInvoiceForm from '../components/SalesInvoiceForm';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -99,6 +99,11 @@ const Sales = () => {
       
       const normalizedData = (data || []).map(normalizeBill).filter((b: any) => b && !b.items_raw?.is_payment_voucher);
       setInvoices(normalizedData);
+
+      // Sync items from sales_invoices into the stock_items table once per invoice
+      syncInvoiceItemsToItemsTable(data || [], cid).catch(err => {
+        console.warn('Failed to sync invoice items to stock_items:', err);
+      });
     } catch (err: any) {
       console.error("Error loading sales:", err.message || err);
     } finally {

@@ -370,6 +370,24 @@ export const safeSupabaseSave = async (table: string, payload: any, id?: string)
   return res;
 };
 
+export const parseInvoiceItems = (itemsRaw: any): any[] => {
+  if (!itemsRaw) return [];
+  let parsed = itemsRaw;
+  if (typeof itemsRaw === 'string') {
+    try {
+      parsed = JSON.parse(itemsRaw);
+    } catch {
+      return [];
+    }
+  }
+  if (Array.isArray(parsed)) return parsed;
+  if (parsed && typeof parsed === 'object') {
+    if (Array.isArray(parsed.line_items)) return parsed.line_items;
+    if (Array.isArray(parsed.items)) return parsed.items;
+  }
+  return [];
+};
+
 export const normalizeBill = (data: any) => {
   if (!data) return null;
   let isSale = false;
@@ -383,15 +401,50 @@ export const normalizeBill = (data: any) => {
   const partyName = isSale ? (data.customer_name ?? data.vendor_name ?? '') : (data.vendor_name ?? data.customer_name ?? '');
   const docNumber = data.challan_number || data.invoice_number || data.bill_number || '';
   const itemsRaw = data.items || {};
-  let line_items = [];
+  let line_items: any[] = [];
   let gstType = 'Intra-State';
 
-  if (Array.isArray(itemsRaw)) {
-    line_items = itemsRaw;
-  } else if (typeof itemsRaw === 'object') {
-    line_items = itemsRaw.line_items || [];
-    gstType = itemsRaw.gst_type || 'Intra-State'; 
+  const rawList = parseInvoiceItems(itemsRaw);
+  if (typeof itemsRaw === 'object' && itemsRaw !== null && !Array.isArray(itemsRaw)) {
+    gstType = itemsRaw.gst_type || data.gst_type || 'Intra-State';
+  } else if (data.gst_type) {
+    gstType = data.gst_type;
   }
+
+  line_items = rawList.map((it: any) => {
+    const particulars = it.particulars || it.itemName || it.name || '';
+    const hsn = it.hsn || it.hsnCode || '';
+    const qty = parseFloat(it.qty !== undefined ? it.qty : (it.quantity !== undefined ? it.quantity : 0)) || 0;
+    const rate = parseFloat(it.rate !== undefined ? it.rate : 0) || 0;
+    const tax = parseFloat(it.tax !== undefined ? it.tax : (it.tax_rate !== undefined ? it.tax_rate : (it.gst || 0))) || 0;
+    const amount = parseFloat(it.amount !== undefined ? it.amount : (it.taxableAmount !== undefined ? it.taxableAmount : 0)) || (qty * rate);
+    const cgst = it.cgst !== undefined ? parseFloat(it.cgst) : (amount * (tax / 2 / 100));
+    const sgst = it.sgst !== undefined ? parseFloat(it.sgst) : (amount * (tax / 2 / 100));
+    const igst = it.igst !== undefined ? parseFloat(it.igst) : (amount * (tax / 100));
+    const isInter = gstType === 'Inter-State' || gstType === 'IGST';
+    const total = it.total !== undefined ? parseFloat(it.total) : (it.itemTotal !== undefined ? parseFloat(it.itemTotal) : (amount + (isInter ? igst : (cgst + sgst))));
+
+    return {
+      ...it,
+      particulars,
+      itemName: particulars,
+      name: particulars,
+      hsn,
+      hsnCode: hsn,
+      qty,
+      quantity: qty,
+      rate,
+      tax,
+      tax_rate: tax,
+      amount,
+      taxableAmount: amount,
+      cgst,
+      sgst,
+      igst,
+      total,
+      itemTotal: total
+    };
+  });
 
   return {
     ...data,
@@ -468,8 +521,9 @@ export const fetchStockItemsWithBalance = async (company_id: string) => {
 
       normalizedVouchers.forEach((v: any) => {
         v.items?.forEach((it: any) => {
-          if (it.itemName?.trim().toLowerCase() === itemNameLower) {
-            const q = Number(it.qty || 0);
+          const itName = (it.particulars || it.itemName || it.name || '').trim().toLowerCase();
+          if (itName && itName === itemNameLower) {
+            const q = Number(it.qty || it.quantity || 0);
             if (v.type === 'Purchase') inward += q;
             else outward += q;
           }
@@ -489,17 +543,109 @@ export const fetchStockItemsWithBalance = async (company_id: string) => {
   }
 };
 
+export const syncInvoiceItemsToItemsTable = async (invoices: any[], company_id: string) => {
+  if (!invoices || !Array.isArray(invoices) || !company_id) return;
+
+  const storageKey = `zenter_synced_invoices_${company_id}`;
+  let syncedIds: Set<string>;
+  try {
+    const raw = localStorage.getItem(storageKey);
+    syncedIds = new Set(raw ? JSON.parse(raw) : []);
+  } catch {
+    syncedIds = new Set();
+  }
+
+  // Filter out already processed invoices
+  const pendingInvoices = invoices.filter(inv => inv && inv.id && !syncedIds.has(String(inv.id)));
+  if (pendingInvoices.length === 0) return;
+
+  // Retrieve existing stock items for the company to avoid duplicates
+  const { data: currentStockItems, error } = await supabase
+    .from('stock_items')
+    .select('id, name, hsn, rate, selling_price, tax_rate')
+    .eq('company_id', company_id)
+    .eq('is_deleted', false);
+
+  if (error) {
+    console.warn('Error fetching stock items for sync:', error);
+    return;
+  }
+
+  const stockMap = new Map<string, any>();
+  (currentStockItems || []).forEach((si: any) => {
+    if (si.name) stockMap.set(si.name.trim().toUpperCase(), si);
+  });
+
+  for (const inv of pendingInvoices) {
+    const itemsRaw = inv.items_raw !== undefined ? inv.items_raw : inv.items;
+    const itemsList = parseInvoiceItems(itemsRaw);
+
+    for (const it of itemsList) {
+      const name = (it.particulars || it.itemName || it.name || '').trim().toUpperCase();
+      if (!name) continue;
+
+      const hsn = (it.hsn || it.hsnCode || '').toString().trim().toUpperCase();
+      const rate = Number(it.rate) || 0;
+      const taxRate = Number(it.tax !== undefined ? it.tax : (it.tax_rate !== undefined ? it.tax_rate : (it.gst || 0))) || 0;
+      const unit = it.unit || 'PCS';
+
+      const existing = stockMap.get(name);
+      if (existing) {
+        const needsUpdate = (!existing.hsn && hsn) || (!existing.rate && rate);
+        if (needsUpdate) {
+          const updatePayload: any = {};
+          if (!existing.hsn && hsn) updatePayload.hsn = hsn;
+          if (!existing.rate && rate) {
+            updatePayload.rate = rate;
+            updatePayload.selling_price = rate;
+          }
+          if (taxRate && !existing.tax_rate) updatePayload.tax_rate = taxRate;
+
+          await supabase.from('stock_items').update(updatePayload).eq('id', existing.id);
+        }
+      } else {
+        const newRecord = {
+          name,
+          hsn,
+          rate,
+          selling_price: rate,
+          tax_rate: taxRate,
+          unit,
+          company_id,
+          in_stock: 0,
+          description: it.particulars || it.description || '',
+          is_deleted: false
+        };
+        const { data: inserted, error: insertErr } = await supabase.from('stock_items').insert([newRecord]).select();
+        if (!insertErr && inserted && inserted[0]) {
+          stockMap.set(name, inserted[0]);
+        }
+      }
+    }
+
+    syncedIds.add(String(inv.id));
+  }
+
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(Array.from(syncedIds)));
+  } catch (e) {
+    console.warn('Could not persist synced invoices set:', e);
+  }
+};
+
 export const ensureStockItems = async (items: any[], company_id: string) => {
   if (!items || !Array.isArray(items)) return;
   for (const item of items) {
-    const itemName = item.itemName?.trim().toUpperCase();
+    const itemName = (item.particulars || item.itemName || item.name)?.trim().toUpperCase();
     if (!itemName) continue;
-    const { data: existing } = await supabase.from('stock_items').select('id').eq('company_id', company_id).eq('name', itemName).eq('is_deleted', false).maybeSingle();
+    const { data: existing } = await supabase.from('stock_items').select('id, hsn, rate, tax_rate').eq('company_id', company_id).eq('name', itemName).eq('is_deleted', false).maybeSingle();
+    const rate = Number(item.rate) || 0;
     const payload: any = {
       name: itemName,
-      hsn: (item.hsnCode || '').toUpperCase(),
-      rate: Number(item.rate) || 0,
-      tax_rate: Number(item.tax_rate) || 0,
+      hsn: (item.hsn || item.hsnCode || '').toUpperCase(),
+      rate: rate,
+      selling_price: rate,
+      tax_rate: Number(item.tax !== undefined ? item.tax : (item.tax_rate || 0)),
       unit: item.unit || 'PCS',
       company_id,
       is_deleted: false

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Printer, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { getActiveCompanyId, getAppSettings } from '../utils/helpers';
+import { getActiveCompanyId, getAppSettings, parseInvoiceItems } from '../utils/helpers';
 
 interface InvoicePrintModalProps {
   isOpen: boolean;
@@ -108,8 +108,8 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({ isOpen, on
   let lineItems: any[] = [];
   if (Array.isArray(invoice?.items)) {
     lineItems = invoice.items;
-  } else if (Array.isArray(itemsRaw?.line_items)) {
-    lineItems = itemsRaw.line_items;
+  } else {
+    lineItems = parseInvoiceItems(itemsRaw);
   }
 
   let dutiesAndTaxes: any[] = [];
@@ -157,16 +157,26 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({ isOpen, on
   let totalSubtotal = 0;
 
   const calculatedItems = lineItems.map((item: any) => {
-    const qty = parseFloat(item.qty || item.quantity) || 0;
-    const rate = parseFloat(item.rate) || 0;
-    const taxRate = hasGstin ? (parseFloat(item.tax_rate || item.gst || item.tax) || 0) : 0;
-    const amount = parseFloat(item.taxableAmount) || (qty * rate);
+    const qty = parseFloat(item.qty !== undefined ? item.qty : (item.quantity !== undefined ? item.quantity : 0)) || 0;
+    const rate = parseFloat(item.rate !== undefined ? item.rate : 0) || 0;
+    const taxRate = hasGstin ? (parseFloat(item.tax !== undefined ? item.tax : (item.tax_rate !== undefined ? item.tax_rate : (item.gst || 0))) || 0) : 0;
+    const amount = parseFloat(item.amount !== undefined ? item.amount : (item.taxableAmount !== undefined ? item.taxableAmount : 0)) || (qty * rate);
 
     let cgst = 0;
     let sgst = 0;
     let igst = 0;
 
-    if (hasGstin) {
+    if (item.cgst !== undefined) {
+      cgst = parseFloat(item.cgst) || 0;
+    }
+    if (item.sgst !== undefined) {
+      sgst = parseFloat(item.sgst) || 0;
+    }
+    if (item.igst !== undefined) {
+      igst = parseFloat(item.igst) || 0;
+    }
+
+    if (hasGstin && item.cgst === undefined && item.sgst === undefined && item.igst === undefined) {
       if (isInterState) {
         igst = amount * (taxRate / 100);
       } else {
@@ -175,7 +185,11 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({ isOpen, on
       }
     }
 
-    const subtotal = amount + (isInterState ? igst : (cgst + sgst));
+    const subtotal = item.total !== undefined
+      ? parseFloat(item.total)
+      : (item.itemTotal !== undefined
+        ? parseFloat(item.itemTotal)
+        : (amount + (isInterState ? igst : (cgst + sgst))));
 
     totalQty += qty;
     totalAmount += amount;
@@ -185,8 +199,8 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({ isOpen, on
     totalSubtotal += subtotal;
 
     return {
-      name: item.itemName || item.name || '',
-      hsn: item.hsnCode || item.hsn || '',
+      name: item.particulars || item.itemName || item.name || '',
+      hsn: item.hsn || item.hsnCode || '',
       qty,
       rate,
       amount,

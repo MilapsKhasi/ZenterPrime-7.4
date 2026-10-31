@@ -485,13 +485,16 @@ const SalesInvoiceForm: React.FC<SalesInvoiceFormProps> = ({ initialData, onSubm
       const resolvedPartyId = formData.customer_id || selectedParty?.id || null;
 
       const normalizedLineItems = formData.items.map((it: any) => {
+        const itName = (it.particulars || it.itemName || it.name || '').trim().toUpperCase();
         const matchingStock = stockItems.find(s => 
-          s.name?.trim().toUpperCase() === (it.itemName || '').trim().toUpperCase() || 
+          s.name?.trim().toUpperCase() === itName || 
           (it.item_id && String(s.id) === String(it.item_id))
         );
         const itemId = it.item_id || it.itemId || matchingStock?.id || null;
         return {
           ...it,
+          particulars: itName,
+          itemName: itName,
           item_id: itemId,
           itemId: itemId,
           stock_item_id: itemId
@@ -524,6 +527,17 @@ const SalesInvoiceForm: React.FC<SalesInvoiceFormProps> = ({ initialData, onSubm
       
       const savedRes = await safeSupabaseSave('sales_invoices', payload, initialData?.id);
       await ensureStockItems(normalizedLineItems, cid);
+      if (savedRes.data && savedRes.data[0] && savedRes.data[0].id) {
+        try {
+          const storageKey = `zenter_synced_invoices_${cid}`;
+          const raw = localStorage.getItem(storageKey);
+          const s = new Set(raw ? JSON.parse(raw) : []);
+          s.add(String(savedRes.data[0].id));
+          localStorage.setItem(storageKey, JSON.stringify(Array.from(s)));
+        } catch {
+          // ignore
+        }
+      }
       await ensureParty(trimmedCustomerName, 'customer', cid, resolvedPartyId || undefined);
       if (payload.status === 'Paid' && savedRes.data) await syncTransactionToCashbook(savedRes.data[0]);
       clearDraft(draftKey);

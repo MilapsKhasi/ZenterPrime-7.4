@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Search, Edit, Trash2, Loader2, Download, ReceiptText, Plus, Printer, ArrowDownCircle } from 'lucide-react';
-import { formatCurrency, formatDate, getActiveCompanyId, normalizeBill, enrichTransactionsWithMasterData } from '../utils/helpers';
+import { formatCurrency, formatDate, getActiveCompanyId, normalizeBill, enrichTransactionsWithMasterData, syncInvoiceItemsToItemsTable } from '../utils/helpers';
 import Modal from '../components/Modal';
 import SalesInvoiceForm from '../components/SalesInvoiceForm';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -47,6 +47,12 @@ const Invoices = () => {
       supabase.from('vendors').select('*').eq('company_id', cid),
       supabase.from('stock_items').select('*').eq('company_id', cid)
     ]);
+
+    if (data && data.length > 0) {
+      syncInvoiceItemsToItemsTable(data, cid).catch(err => {
+        console.warn('Failed to sync invoice items to stock_items:', err);
+      });
+    }
 
     const mappedData = (data || []).map((item: any) => {
         const norm = normalizeBill(item);

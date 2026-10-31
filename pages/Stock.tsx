@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Search, History, Trash2, Edit, Eye, Package, Maximize2, Minimize2, Plus, TrendingUp, TrendingDown, Layers, ArrowDownLeft, ArrowUpRight, ArrowLeft, Lock } from 'lucide-react';
-import { getActiveCompanyId, formatDate, normalizeBill } from '../utils/helpers';
+import { getActiveCompanyId, formatDate, normalizeBill, syncInvoiceItemsToItemsTable } from '../utils/helpers';
 import Modal from '../components/Modal';
 import StockForm from '../components/StockForm';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -64,17 +64,22 @@ const Stock = () => {
     const cid = getActiveCompanyId();
     if (!cid) return;
     try {
+      const [{ data: purchaseData }, { data: saleData }] = await Promise.all([
+        supabase.from('purchase_bills').select('*').eq('company_id', cid).eq('is_deleted', false),
+        supabase.from('sales_invoices').select('*').eq('company_id', cid).eq('is_deleted', false)
+      ]);
+
+      // Sync any items from external invoices into stock_items before displaying
+      if (saleData && saleData.length > 0) {
+        await syncInvoiceItemsToItemsTable(saleData, cid);
+      }
+
       const { data: stockItems } = await supabase
         .from('stock_items')
         .select('*')
         .eq('company_id', cid)
         .eq('is_deleted', false)
         .order('name', { ascending: true });
-      
-      const [{ data: purchaseData }, { data: saleData }] = await Promise.all([
-        supabase.from('purchase_bills').select('*').eq('company_id', cid).eq('is_deleted', false),
-        supabase.from('sales_invoices').select('*').eq('company_id', cid).eq('is_deleted', false)
-      ]);
       
       const normalizedVouchers = [
         ...(purchaseData || []).map((b: any) => {
@@ -197,9 +202,10 @@ const Stock = () => {
     
     vouchers.forEach(v => {
       v.items?.forEach((it: any) => {
-        if (it.itemName?.trim().toLowerCase() === selectedItem.name?.trim().toLowerCase()) {
+        const itName = (it.particulars || it.itemName || it.name || '').trim().toLowerCase();
+        if (itName && itName === selectedItem.name?.trim().toLowerCase()) {
           const isPurchase = v.type === 'Purchase';
-          const qty = Number(it.qty || 0);
+          const qty = Number(it.qty || it.quantity || 0);
           transactions.push({ 
             date: v.date, 
             docNo: v.bill_number || v.invoice_number, 
